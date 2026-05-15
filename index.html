@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VIP CS / CRM Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主要導覽">
+        <div class="brand-block">
+          <div class="brand-mark">VIP</div>
+          <div>
+            <strong>VIP CS</strong>
+            <span>Player Relationship</span>
+          </div>
+        </div>
+        <nav class="nav-list" id="navList"></nav>
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+          <div>
+            <strong>Compliance Guard</strong>
+            <span>RG / Risk checks enabled</span>
+          </div>
+        </div>
+      </aside>
+
+      <div class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="viewEyebrow">VIP Control Center</p>
+            <h1 id="viewTitle">Dashboard</h1>
+          </div>
+          <div class="topbar-actions">
+            <label class="global-search">
+              <span>搜尋</span>
+              <input id="globalSearch" type="search" placeholder="Player ID、帳號、標籤、工單" />
+            </label>
+            <label class="language-field">
+              <span>語言</span>
+              <select id="localeSelect" aria-label="語言" data-no-i18n>
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+                <option value="vi">Tiếng Việt</option>
+              </select>
+            </label>
+            <button class="ghost-button" id="roleButton" type="button">VIP CS</button>
+            <button class="primary-button" id="quickTicket" type="button">新增工單</button>
+          </div>
+        </header>
+
+        <main id="app" class="main-view" tabindex="-1"></main>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalBackdrop" hidden>
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <header class="modal-header">
+          <div>
+            <p class="eyebrow" id="modalEyebrow">Action</p>
+            <h2 id="modalTitle">Modal</h2>
+          </div>
+          <button class="icon-button" id="closeModal" type="button" aria-label="關閉">×</button>
+        </header>
+        <div id="modalBody" class="modal-body"></div>
+      </section>
+    </div>
+
+    <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
