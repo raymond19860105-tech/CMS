@@ -2694,34 +2694,195 @@ function rgSignals(player) {
 }
 
 function renderReports() {
+  const totalDeposit = players.reduce((sum, player) => sum + player.metrics.monthDeposit, 0);
+  const totalWithdrawal = players.reduce((sum, player) => sum + player.metrics.monthWithdrawal, 0);
+  const totalNgr = players.reduce((sum, player) => sum + player.metrics.ngr, 0);
+  const totalBonusCost = players.reduce((sum, player) => sum + player.metrics.bonusCost + player.metrics.cashbackCost, 0);
+  const bonusCostRatio = Math.round((totalBonusCost / Math.max(1, Math.abs(totalNgr))) * 100);
+  const slaRisk = tickets.filter((ticket) => ticket.sla === "due" || ticket.sla === "breached").length;
+  const highRiskVip = players.filter((player) => player.riskLevel === "High" || player.rgRisk === "High").length;
+  const churnVip = players.filter((player) => player.tags.includes("Churn Risk")).length;
+  const reportRows = [
+    {
+      title: "VIP 價值",
+      question: "VIP 族群今天是否健康？",
+      primary: formatMoney(totalNgr),
+      secondary: `入金 ${formatMoney(totalDeposit)} / 出金 ${formatMoney(totalWithdrawal)}`,
+      warning: "NGR 下降但優惠成本上升時，要檢查高成本玩家與套利風險。",
+      action: "優先查看 VIP 4+、High Value、Bonus Cost 高的玩家。",
+      bars: [45, 62, 58, 80, 72, 66]
+    },
+    {
+      title: "客服績效",
+      question: "SLA 和服務品質有沒有失控？",
+      primary: `${slaRisk} 件`,
+      secondary: "接近或已逾 SLA",
+      warning: "P0/P1 或大額出金案件逾時時，主管需要補 owner 和下一步。",
+      action: "先處理 breached，再看 due soon，最後看一般 Open。",
+      bars: [70, 63, 78, 82, 76, 88]
+    },
+    {
+      title: "留存",
+      question: "哪些高價值玩家可能流失？",
+      primary: `${churnVip} 位`,
+      secondary: "帶 Churn Risk 標籤",
+      warning: "大贏後沉默、連續未登入、投訴後未回訪都要分開看。",
+      action: "建立關係維護任務，但避免用刺激投注的話術。",
+      bars: [35, 48, 54, 57, 62, 68]
+    },
+    {
+      title: "優惠成本",
+      question: "補償是否真的值得？",
+      primary: `${bonusCostRatio}%`,
+      secondary: "Bonus + Cashback / NGR",
+      warning: "成本率超過 60% 時，要要求 ROI 理由和主管審批。",
+      action: "先看 RG、Bonus Abuse、Arbitrage，再決定是否給優惠。",
+      bars: [62, 56, 49, 44, 39, 31]
+    },
+    {
+      title: "投訴",
+      question: "投訴是否正在變成風險？",
+      primary: `${tickets.filter((ticket) => /Complaint|Withdrawal|Responsible/i.test(ticket.category)).length} 件`,
+      secondary: "投訴 / 出金 / RG 相關",
+      warning: "同玩家多工單或 SLA breach 會放大客訴與監管風險。",
+      action: "把對話、工單、內部備註串回 Player 360。",
+      bars: [30, 28, 34, 26, 21, 18]
+    },
+    {
+      title: "風險",
+      question: "哪些玩家不應該被一般行銷處理？",
+      primary: `${highRiskVip} 位`,
+      secondary: "High Risk / RG High",
+      warning: "RG High、AML Watch、Bonus Abuse 不應進一般留存或促銷流程。",
+      action: "轉 Risk / Compliance，客服只看可揭露指引。",
+      bars: [20, 26, 24, 31, 28, 22]
+    }
+  ];
+
   return `
     <section class="section-stack">
       <div class="view-header">
         <div>
           <p class="eyebrow">Management Reports</p>
-          <h2>VIP 價值、客服績效與風險報表</h2>
+          <h2>管理報表總覽</h2>
         </div>
       </div>
 
+      <div class="dashboard-grid">
+        ${metricCard("本月 NGR", formatMoney(totalNgr), "扣除玩家輸贏與成本後的管理視角", "up")}
+        ${metricCard("優惠成本率", `${bonusCostRatio}%`, "超過 60% 需 Manager 理由", bonusCostRatio >= 60 ? "down" : "flat")}
+        ${metricCard("SLA 風險", slaRisk, "due / breached 工單", slaRisk ? "down" : "flat")}
+        ${metricCard("高風險 VIP", highRiskVip, "Risk High 或 RG High", highRiskVip ? "down" : "flat")}
+      </div>
+
+      <div class="two-column">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Executive Readout</p>
+              <h3>主管先看這三件事</h3>
+            </div>
+          </div>
+          <div class="report-insight-list">
+            ${reportInsight("先看風險", `${highRiskVip} 位高風險 VIP 不能進一般促銷流程，需走 Risk / Compliance 指引。`, "blocked")}
+            ${reportInsight("再看服務", `${slaRisk} 件工單接近或已逾時，需確認 owner、下一步與可揭露內容。`, slaRisk ? "pending" : "open")}
+            ${reportInsight("最後看成本", `目前優惠成本率 ${bonusCostRatio}%，所有高額補償都要看 ROI 與玩家風險。`, bonusCostRatio >= 60 ? "pending" : "open")}
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Actions</p>
+              <h3>今天建議處理順序</h3>
+            </div>
+          </div>
+          <div class="report-action-list">
+            ${reportAction("1", "處理 breached / due 工單", "避免大額出金、RG、投訴案件失去 SLA 控制。")}
+            ${reportAction("2", "檢查高風險 VIP", "RG High、AML Watch、Bonus Abuse 先從行銷與優惠流程排除。")}
+            ${reportAction("3", "審查高成本優惠", "金額超過建議上限或成本率過高時，要求主管理由。")}
+            ${reportAction("4", "回訪流失風險玩家", "只做關係維護，不用刺激投注話術。")}
+          </div>
+        </section>
+      </div>
+
+      <section class="table-panel">
+        <div class="table-header">
+          <div>
+            <p class="eyebrow">How To Read</p>
+            <h3>每張報表看什麼</h3>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>報表</th>
+                <th>回答的問題</th>
+                <th>異常訊號</th>
+                <th>管理動作</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${reportRows
+                .map(
+                  (row) => `
+                    <tr>
+                      <td><strong>${row.title}</strong><br><span class="message-meta">${row.secondary}</span></td>
+                      <td>${row.question}</td>
+                      <td>${row.warning}</td>
+                      <td>${row.action}</td>
+                    </tr>
+                  `
+                )
+                .join("")}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <div class="report-grid">
-        ${reportTile("VIP Value Report", "VIP Count、Active VIP、Deposit、Withdrawal、GGR、NGR、Bonus Cost Ratio。", [45, 62, 58, 80, 72, 66])}
-        ${reportTile("Agent Performance", "Response Time、Resolution Time、CSAT、Retention Success、VIP NGR Managed。", [70, 63, 78, 82, 76, 88])}
-        ${reportTile("Retention Report", "Churn Risk、回訪率、挽留成功、沉默玩家回流。", [35, 48, 54, 57, 62, 68])}
-        ${reportTile("Bonus Cost Report", "Bonus、Cashback、Manual Credit、補償 ROI。", [62, 56, 49, 44, 39, 31])}
-        ${reportTile("Complaint Report", "投訴率、SLA breach、升級案件與結案品質。", [30, 28, 34, 26, 21, 18])}
-        ${reportTile("Risk Report", "High Risk VIP、AML Alerts、Bonus Abuse、RG Alerts、Frozen Accounts。", [20, 26, 24, 31, 28, 22])}
+        ${reportRows.map((row) => reportTile(row)).join("")}
       </div>
     </section>
   `;
 }
 
-function reportTile(title, body, bars) {
+function reportInsight(title, body, status) {
+  return `
+    <article class="report-insight ${status}">
+      <strong>${title}</strong>
+      <p>${body}</p>
+    </article>
+  `;
+}
+
+function reportAction(step, title, body) {
+  return `
+    <article class="report-action">
+      <span>${step}</span>
+      <div>
+        <strong>${title}</strong>
+        <p>${body}</p>
+      </div>
+    </article>
+  `;
+}
+
+function reportTile(report) {
   return `
     <article class="report-tile">
-      <h3>${title}</h3>
-      <p>${body}</p>
+      <div class="report-tile-head">
+        <div>
+          <p class="eyebrow">${report.question}</p>
+          <h3>${report.title}</h3>
+        </div>
+        <strong>${report.primary}</strong>
+      </div>
+      <p>${report.secondary}</p>
+      <p>${report.action}</p>
       <div class="mini-bars" aria-hidden="true">
-        ${bars.map((bar, index) => `<span class="mini-bar" style="height:${bar}%; background:${index % 2 ? "#a26e1b" : "#24715e"}"></span>`).join("")}
+        ${report.bars.map((bar, index) => `<span class="mini-bar" style="height:${bar}%; background:${index % 2 ? "#a26e1b" : "#24715e"}"></span>`).join("")}
       </div>
     </article>
   `;

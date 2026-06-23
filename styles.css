@@ -405,6 +405,8 @@ h4 {
 .timeline-event,
 .case-card,
 .signal-pill,
+.report-insight,
+.report-action,
 .template-pill,
 .report-tile,
 .setting-row {
@@ -677,6 +679,8 @@ tbody tr:last-child td {
 .work-link-card p,
 .timeline-event p,
 .case-card p,
+.report-insight p,
+.report-action p,
 .report-tile p,
 .setting-row p {
   margin-bottom: 0;
@@ -1294,6 +1298,53 @@ tbody tr:last-child td {
   gap: 12px;
 }
 
+.report-insight-list,
+.report-action-list {
+  display: grid;
+  gap: 10px;
+}
+
+.report-insight {
+  padding: 12px;
+  border-left: 4px solid var(--ok);
+}
+
+.report-insight.pending {
+  border-left-color: var(--warning);
+  background: #fffaf3;
+}
+
+.report-insight.blocked {
+  border-left-color: var(--danger);
+  background: #fff7f6;
+}
+
+.report-insight strong,
+.report-action strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.report-action {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 12px;
+}
+
+.report-action > span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .case-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1393,8 +1444,25 @@ tbody tr:last-child td {
 }
 
 .report-tile {
-  min-height: 170px;
+  min-height: 210px;
   padding: 16px;
+}
+
+.report-tile-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.report-tile-head h3 {
+  margin-bottom: 0;
+}
+
+.report-tile-head > strong {
+  font-size: 22px;
+  white-space: nowrap;
 }
 
 .mini-bars {
