@@ -1547,6 +1547,21 @@ tbody tr:last-child td {
     grid-template-columns: 92px minmax(0, 1fr);
   }
 
+  .sidebar {
+    z-index: 40;
+    width: 92px;
+    overflow-x: hidden;
+    transition:
+      width 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .sidebar:hover,
+  .sidebar:focus-within {
+    width: 264px;
+    box-shadow: 18px 0 40px rgba(14, 18, 16, 0.24);
+  }
+
   .brand-block {
     grid-template-columns: 1fr;
   }
@@ -1562,13 +1577,44 @@ tbody tr:last-child td {
     justify-items: center;
   }
 
+  .sidebar:hover .brand-block,
+  .sidebar:focus-within .brand-block {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .sidebar:hover .brand-block div:not(.brand-mark),
+  .sidebar:focus-within .brand-block div:not(.brand-mark),
+  .sidebar:hover .nav-button span:not(.nav-icon):not(.nav-count),
+  .sidebar:focus-within .nav-button span:not(.nav-icon):not(.nav-count),
+  .sidebar:hover .sidebar-footer div,
+  .sidebar:focus-within .sidebar-footer div {
+    display: block;
+  }
+
+  .sidebar:hover .nav-button,
+  .sidebar:focus-within .nav-button {
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+    justify-items: stretch;
+  }
+
   .nav-count {
     display: none;
+  }
+
+  .sidebar:hover .nav-count,
+  .sidebar:focus-within .nav-count {
+    display: inline-flex;
   }
 
   .sidebar-footer {
     grid-template-columns: 1fr;
     justify-items: center;
+  }
+
+  .sidebar:hover .sidebar-footer,
+  .sidebar:focus-within .sidebar-footer {
+    grid-template-columns: 12px minmax(0, 1fr);
+    justify-items: stretch;
   }
 
   .dashboard-grid,
@@ -1596,6 +1642,14 @@ tbody tr:last-child td {
 @media (max-width: 760px) {
   .app-shell {
     display: block;
+  }
+
+  .sidebar,
+  .sidebar:hover,
+  .sidebar:focus-within {
+    width: auto;
+    overflow-x: visible;
+    box-shadow: none;
   }
 
   .sidebar {
