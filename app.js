@@ -978,6 +978,46 @@ const riskAlerts = [
   { id: "R-418", playerId: "P-84518", type: "Churn Risk", severity: "Medium", status: "Open", action: "關係維護，不使用刺激性投注話術" }
 ];
 
+const agents = [
+  { name: "Ivy Chen", role: "VIP CS", languages: ["繁中", "English"], skills: ["VIP 5", "RG Care"], capacity: 5, active: 3, status: "Available" },
+  { name: "Ken Wu", role: "VIP CS", languages: ["繁中", "English"], skills: ["Payment", "KYC"], capacity: 5, active: 5, status: "At capacity" },
+  { name: "Mina Ho", role: "VIP CS", languages: ["日本語", "English"], skills: ["Retention", "High Value"], capacity: 4, active: 2, status: "Available" },
+  { name: "RG Officer", role: "Compliance", languages: ["繁中", "English"], skills: ["RG", "Self-exclusion"], capacity: 6, active: 4, status: "Available" },
+  { name: "Payment Desk", role: "Payment", languages: ["繁中", "English"], skills: ["Withdrawal", "KYC"], capacity: 8, active: 7, status: "Busy" }
+];
+
+const routingRules = [
+  { trigger: "VIP 5 + P0 / RG High", route: "RG Officer + VIP Manager", target: "1 分鐘首響，15 分鐘內決策" },
+  { trigger: "Withdrawal + KYC / AML", route: "Payment Desk + Compliance", target: "30 分鐘內同步可揭露狀態" },
+  { trigger: "Bonus Abuse / Arbitrage", route: "Risk Team", target: "禁止額外優惠，需留完整原因" },
+  { trigger: "Churn Risk + VIP 4+", route: "負責客服 + Team Leader", target: "24 小時內關係維護" }
+];
+
+let rgCases = [
+  {
+    id: "RG-902",
+    playerId: "P-88031",
+    riskScore: 92,
+    status: "Compliance Review",
+    owner: "RG Officer",
+    nextReview: "今日 16:30",
+    actions: ["Promo Block", "Deposit Limit Suggested", "Cooling-off Offered"],
+    evidence: ["6 小時入金 5 次", "今日虧損高於 30 日平均 3.2 倍", "聊天內容要求補償並出現情緒波動"],
+    note: "不可使用促銷式挽留；僅能提供玩家保護工具與可用協助。"
+  },
+  {
+    id: "RG-884",
+    playerId: "P-84518",
+    riskScore: 61,
+    status: "Monitoring",
+    owner: "Mina Ho",
+    nextReview: "明日 12:00",
+    actions: ["No Promo Retention", "Wellbeing Check"],
+    evidence: ["VIP 4 大贏後 7 日未登入", "過去偏好生日禮與邀請制活動"],
+    note: "可做關係維護，但不得暗示投注或使用 bonus 作為回流誘因。"
+  }
+];
+
 let bonusRequests = [
   { id: "B-2041", playerId: "P-86002", type: "Free Spin", amount: 1200, status: "Team Leader 審核", route: "Medium", created: "今日 10:32" },
   { id: "B-2033", playerId: "P-84518", type: "Birthday Gift", amount: 5000, status: "Manager 審核", route: "High", created: "昨日 18:10" }
@@ -1147,6 +1187,165 @@ function conversationsForPlayer(playerId) {
   return conversations.find((conversation) => conversation.playerId === playerId);
 }
 
+function ticketById(id) {
+  return tickets.find((ticket) => ticket.id === id);
+}
+
+function rgCaseById(id) {
+  return rgCases.find((item) => item.id === id);
+}
+
+function suggestedOwner(player, category = "") {
+  if (player.rgRisk === "High" || /Responsible Gaming|RG/i.test(category)) return "RG Officer";
+  if (player.kyc !== "通過" || player.tags.includes("AML Watch") || /Withdrawal|KYC|Payment/i.test(category)) return "Payment Desk";
+  if (player.tags.includes("Bonus Abuse") || player.tags.includes("Arbitrage") || /Risk/i.test(category)) return "Risk Team";
+  return player.agent;
+}
+
+function ticketStatusClass(status) {
+  if (/Closed|Resolved/i.test(status)) return "closed";
+  if (/Escalated|Review|Payment|Compliance|Risk/i.test(status)) return "pending";
+  return "open";
+}
+
+function nextTicketStatus(ticket) {
+  const flow = ["Open", "Payment Review", "Risk Review", "Compliance Review", "Escalated", "Resolved", "Closed"];
+  const current = flow.indexOf(ticket.status);
+  if (current < 0) return "Payment Review";
+  return flow[Math.min(current + 1, flow.length - 1)];
+}
+
+function playerTimeline(playerId) {
+  const player = playerById(playerId);
+  const events = [
+    {
+      rank: 5,
+      type: "Payment",
+      time: player.lastDeposit,
+      title: "最近入金",
+      body: `${formatMoney(Math.round(player.metrics.monthDeposit / 8))}，${player.behavior.depositPattern}`
+    },
+    {
+      rank: 9,
+      type: "Betting",
+      time: player.lastBet,
+      title: "最近投注",
+      body: `${player.behavior.games.join(" / ")}，${player.behavior.bettingTime}`
+    }
+  ];
+
+  conversations
+    .filter((conversation) => conversation.playerId === playerId)
+    .forEach((conversation, index) => {
+      events.push({
+        rank: 20 + index,
+        type: "Conversation",
+        time: conversation.waiting,
+        title: conversation.topic,
+        body: `${conversation.channel} · ${conversation.priority} · ${conversation.status}`
+      });
+    });
+
+  tickets
+    .filter((ticket) => ticket.playerId === playerId)
+    .forEach((ticket, index) => {
+      events.push({
+        rank: 30 + index,
+        type: "Ticket",
+        time: ticket.due,
+        title: `${ticket.id} · ${ticket.category}`,
+        body: `${ticket.status} · ${ticket.team} · ${ticket.description}`
+      });
+    });
+
+  riskAlerts
+    .filter((alert) => alert.playerId === playerId)
+    .forEach((alert, index) => {
+      events.push({
+        rank: 40 + index,
+        type: "Risk",
+        time: alert.status,
+        title: `${alert.type} · ${alert.severity}`,
+        body: alert.action
+      });
+    });
+
+  rgCases
+    .filter((item) => item.playerId === playerId)
+    .forEach((item, index) => {
+      events.push({
+        rank: 50 + index,
+        type: "RG",
+        time: item.nextReview,
+        title: `${item.id} · Score ${item.riskScore}`,
+        body: `${item.status} · ${item.actions.join(" / ")}`
+      });
+    });
+
+  bonusRequests
+    .filter((request) => request.playerId === playerId)
+    .forEach((request, index) => {
+      events.push({
+        rank: 60 + index,
+        type: "Bonus",
+        time: request.created,
+        title: `${request.id} · ${request.type}`,
+        body: `${formatMoney(request.amount)} · ${request.status} · Route ${request.route}`
+      });
+    });
+
+  tasks
+    .filter((task) => task.playerId === playerId)
+    .forEach((task, index) => {
+      events.push({
+        rank: 70 + index,
+        type: "Task",
+        time: task.due,
+        title: `${task.id} · ${task.type}`,
+        body: `${task.priority} · ${task.reason}`
+      });
+    });
+
+  return events.sort((a, b) => a.rank - b.rank);
+}
+
+function routingQueueItems() {
+  const conversationItems = conversations.map((conversation) => {
+    const player = playerById(conversation.playerId);
+    return {
+      id: conversation.id,
+      source: "Inbox",
+      player,
+      priority: conversation.priority,
+      owner: suggestedOwner(player),
+      sla: `Waiting ${conversation.waiting}`,
+      action: conversation.topic,
+      severity: riskClass(conversation.priority)
+    };
+  });
+
+  const ticketItems = tickets
+    .filter((ticket) => ticket.status !== "Closed")
+    .map((ticket) => {
+      const player = playerById(ticket.playerId);
+      return {
+        id: ticket.id,
+        source: "Ticket",
+        player,
+        priority: ticket.priority,
+        owner: ticket.owner || suggestedOwner(player, ticket.category),
+        sla: ticket.due,
+        action: ticket.description,
+        severity: ticket.sla === "breached" ? "high" : ticket.sla === "due" ? "medium" : riskClass(ticket.priority)
+      };
+    });
+
+  return [...conversationItems, ...ticketItems].sort((a, b) => {
+    const weight = { high: 0, medium: 1, low: 2 };
+    return (weight[a.severity] ?? 3) - (weight[b.severity] ?? 3);
+  });
+}
+
 function vipClass(level) {
   return `vip${level}`;
 }
@@ -1260,6 +1459,11 @@ function renderDashboard() {
       </div>
 
       <div class="two-column">
+        ${renderRoutingPanel()}
+        ${renderAgentCapacityPanel()}
+      </div>
+
+      <div class="two-column">
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -1362,6 +1566,74 @@ function renderDashboard() {
             </table>
           </div>
         </section>
+      </div>
+    </section>
+  `;
+}
+
+function renderRoutingPanel() {
+  const queue = routingQueueItems().slice(0, 5);
+  return `
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Omnichannel Routing</p>
+          <h3>下一步分派佇列</h3>
+        </div>
+        <button class="subtle-button" data-action="assign-next" type="button">分派下一件</button>
+      </div>
+      <div class="queue-list">
+        ${queue
+          .map(
+            (item) => `
+              <article class="queue-item">
+                <div>
+                  <strong>${item.source} · ${item.id}</strong>
+                  <p>${item.player.name} · ${item.action}</p>
+                </div>
+                <div class="queue-meta">
+                  <span class="severity ${item.severity}">${item.priority}</span>
+                  <span class="sla-pill ${item.severity === "high" ? "breached" : item.severity === "medium" ? "due" : "safe"}">${item.sla}</span>
+                  <span class="pill">${item.owner}</span>
+                </div>
+              </article>
+            `
+          )
+          .join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderAgentCapacityPanel() {
+  return `
+    <section class="panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">Workload</p>
+          <h3>客服容量與技能</h3>
+        </div>
+      </div>
+      <div class="agent-grid">
+        ${agents
+          .map((agent) => {
+            const usage = Math.min(100, Math.round((agent.active / agent.capacity) * 100));
+            const statusClass = usage >= 100 ? "blocked" : usage >= 80 ? "pending" : "open";
+            return `
+              <article class="agent-card">
+                <div class="list-card-title">
+                  <div>
+                    <strong>${agent.name}</strong>
+                    <p>${agent.role} · ${agent.languages.join(" / ")}</p>
+                  </div>
+                  <span class="status ${statusClass}">${agent.status}</span>
+                </div>
+                <div class="capacity-bar" aria-label="Capacity ${usage}%"><span style="width:${usage}%"></span></div>
+                <p>${agent.active}/${agent.capacity} active · ${agent.skills.join(" / ")}</p>
+              </article>
+            `;
+          })
+          .join("")}
       </div>
     </section>
   `;
@@ -1565,6 +1837,19 @@ function renderProfile(player) {
           ${guardrail(player)}
         </div>
       </div>
+
+      <div class="profile-section">
+        <div class="section-title-row">
+          <h3>玩家事件時間軸</h3>
+          <span class="pill">${playerTimeline(player.id).length} events</span>
+        </div>
+        ${renderPlayerTimeline(player.id)}
+      </div>
+
+      <div class="profile-section">
+        <h3>關聯工作項目</h3>
+        ${renderLinkedWorkItems(player.id)}
+      </div>
     </section>
   `;
 }
@@ -1613,6 +1898,91 @@ function guardrail(player) {
       `
     )
     .join("");
+}
+
+function renderPlayerTimeline(playerId) {
+  return `
+    <div class="event-timeline">
+      ${playerTimeline(playerId)
+        .slice(0, 9)
+        .map(
+          (event) => `
+            <article class="timeline-event ${riskClass(event.type)}">
+              <span class="event-marker">${event.type}</span>
+              <div>
+                <div class="event-head">
+                  <strong>${event.title}</strong>
+                  <span>${event.time}</span>
+                </div>
+                <p>${event.body}</p>
+              </div>
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderLinkedWorkItems(playerId) {
+  const linkedTickets = tickets.filter((ticket) => ticket.playerId === playerId);
+  const linkedRg = rgCases.filter((item) => item.playerId === playerId);
+  const linkedTasks = tasks.filter((task) => task.playerId === playerId);
+  const linkedBonus = bonusRequests.filter((request) => request.playerId === playerId);
+  const empty = !linkedTickets.length && !linkedRg.length && !linkedTasks.length && !linkedBonus.length;
+
+  if (empty) return `<div class="empty-state compact">目前沒有關聯工作項目</div>`;
+
+  return `
+    <div class="work-link-grid">
+      ${linkedTickets
+        .map(
+          (ticket) => `
+            <article class="work-link-card">
+              <span class="tag warning">Ticket</span>
+              <strong>${ticket.id} · ${ticket.category}</strong>
+              <p>${ticket.status} · ${ticket.due}</p>
+              <button class="subtle-button" data-open-ticket="${ticket.id}" type="button">查看工單</button>
+            </article>
+          `
+        )
+        .join("")}
+      ${linkedRg
+        .map(
+          (item) => `
+            <article class="work-link-card">
+              <span class="tag risk">RG</span>
+              <strong>${item.id} · Score ${item.riskScore}</strong>
+              <p>${item.status} · ${item.nextReview}</p>
+              <button class="subtle-button" data-open-rg-case="${item.id}" type="button">查看 RG</button>
+            </article>
+          `
+        )
+        .join("")}
+      ${linkedTasks
+        .map(
+          (task) => `
+            <article class="work-link-card">
+              <span class="tag ok">Task</span>
+              <strong>${task.id} · ${task.type}</strong>
+              <p>${task.priority} · ${task.due}</p>
+            </article>
+          `
+        )
+        .join("")}
+      ${linkedBonus
+        .map(
+          (request) => `
+            <article class="work-link-card">
+              <span class="tag warning">Bonus</span>
+              <strong>${request.id} · ${request.type}</strong>
+              <p>${formatMoney(request.amount)} · ${request.status}</p>
+            </article>
+          `
+        )
+        .join("")}
+    </div>
+  `;
 }
 
 function lineChart(primary, secondary) {
@@ -1755,6 +2125,11 @@ function blockedOfferReason(player) {
 }
 
 function renderTickets() {
+  const openCount = tickets.filter((ticket) => ticket.status !== "Closed").length;
+  const dueCount = tickets.filter((ticket) => ticket.sla === "due").length;
+  const breachedCount = tickets.filter((ticket) => ticket.sla === "breached").length;
+  const escalatedCount = tickets.filter((ticket) => /Escalated|Review/i.test(ticket.status)).length;
+
   return `
     <section class="section-stack">
       <div class="view-header">
@@ -1764,6 +2139,20 @@ function renderTickets() {
         </div>
         <button class="primary-button" data-action="create-ticket" data-player="${state.activePlayerId}" type="button">新增工單</button>
       </div>
+
+      <div class="dashboard-grid">
+        ${metricCard("Open Tickets", openCount, "未結案件需 owner 與下一步", "flat")}
+        ${metricCard("Due Soon", dueCount, "SLA 低於 45 分鐘", "down")}
+        ${metricCard("Breached", breachedCount, "需主管補紀錄", "down")}
+        ${metricCard("In Review", escalatedCount, "Payment / Risk / Compliance", "flat")}
+      </div>
+
+      <section class="ticket-board">
+        ${ticketColumn("Open", tickets.filter((ticket) => ticket.status === "Open"))}
+        ${ticketColumn("Review", tickets.filter((ticket) => /Review/i.test(ticket.status)))}
+        ${ticketColumn("Escalated", tickets.filter((ticket) => ticket.status === "Escalated"))}
+        ${ticketColumn("Resolved", tickets.filter((ticket) => /Resolved|Closed/i.test(ticket.status)))}
+      </section>
 
       <section class="table-panel">
         <div class="table-header">
@@ -1782,6 +2171,7 @@ function renderTickets() {
                 <th>Priority</th>
                 <th>Status</th>
                 <th>Team</th>
+                <th>Owner</th>
                 <th>SLA</th>
                 <th>Action</th>
               </tr>
@@ -1796,10 +2186,16 @@ function renderTickets() {
                       <td>${player.name}<br><span class="message-meta">${player.id}</span></td>
                       <td>${ticket.category}</td>
                       <td>${priorityPill(ticket.priority)}</td>
-                      <td><span class="status ${ticket.status === "Open" ? "open" : "pending"}">${ticket.status}</span></td>
+                      <td><span class="status ${ticketStatusClass(ticket.status)}">${ticket.status}</span></td>
                       <td>${ticket.team}</td>
+                      <td>${ticket.owner || suggestedOwner(player, ticket.category)}</td>
                       <td><span class="sla-pill ${ticket.sla}">${ticket.due}</span></td>
-                      <td><button class="subtle-button" data-open-profile="${player.id}" type="button">Player 360</button></td>
+                      <td>
+                        <div class="row-actions">
+                          <button class="subtle-button" data-open-ticket="${ticket.id}" type="button">處理</button>
+                          <button class="ghost-button" data-open-profile="${player.id}" type="button">Player 360</button>
+                        </div>
+                      </td>
                     </tr>
                   `;
                 })
@@ -1808,6 +2204,44 @@ function renderTickets() {
           </table>
         </div>
       </section>
+    </section>
+  `;
+}
+
+function ticketColumn(title, items) {
+  return `
+    <section class="ticket-column">
+      <div class="ticket-column-head">
+        <strong>${title}</strong>
+        <span class="nav-count">${items.length}</span>
+      </div>
+      <div class="ticket-column-list">
+        ${
+          items.length
+            ? items
+                .map((ticket) => {
+                  const player = playerById(ticket.playerId);
+                  return `
+                    <article class="ticket-card ${ticket.sla}">
+                      <div class="list-card-title">
+                        <div>
+                          <strong>${ticket.id}</strong>
+                          <p>${player.name} · ${ticket.category}</p>
+                        </div>
+                        ${priorityPill(ticket.priority)}
+                      </div>
+                      <p>${ticket.description}</p>
+                      <div class="ticket-card-foot">
+                        <span class="sla-pill ${ticket.sla}">${ticket.due}</span>
+                        <button class="subtle-button" data-open-ticket="${ticket.id}" type="button">處理</button>
+                      </div>
+                    </article>
+                  `;
+                })
+                .join("")
+            : `<div class="empty-state compact">無案件</div>`
+        }
+      </div>
     </section>
   `;
 }
@@ -1864,6 +2298,13 @@ function renderBonus() {
             <button class="primary-button" type="submit" ${checks.blocked ? "disabled" : ""}>送出審批</button>
           </div>
         </form>
+
+        <div class="policy-strip">
+          ${summaryCell("建議上限", formatMoney(checks.maxRecommended))}
+          ${summaryCell("優惠成本率", `${checks.costRatio}%`)}
+          ${summaryCell("預估 NGR", formatMoney(checks.projectedNgr))}
+          ${summaryCell("審批路徑", checks.approvals.join(" + "))}
+        </div>
       </section>
 
       <aside class="section-stack">
@@ -1909,6 +2350,10 @@ function evaluateBonus(player, amount, type) {
   let route = "Auto / Small Amount";
   let blocked = false;
   const numericAmount = Number(amount) || 0;
+  const maxRecommended = Math.max(500, Math.round(player.metrics.ngr * (player.vipLevel >= 4 ? 0.08 : 0.05)));
+  const projectedNgr = player.metrics.ngr - numericAmount;
+  const costRatio = Math.round(((player.metrics.bonusCost + numericAmount) / Math.max(1, Math.abs(player.metrics.ngr))) * 100);
+  const approvals = ["Team Leader"];
 
   const add = (title, body, status, label) => checks.push({ title, body, status, label });
 
@@ -1916,6 +2361,7 @@ function evaluateBonus(player, amount, type) {
     add("Responsible Gaming", "玩家為 RG High，促銷與刺激性挽留禁止；補償需 Compliance 先確認。", "blocked", "阻擋");
     blocked = type !== "Manual Credit";
     route = "Compliance 必審";
+    approvals.push("Compliance");
   } else {
     add("Responsible Gaming", "未達硬性阻擋，仍需避免刺激性話術。", "open", "通過");
   }
@@ -1923,6 +2369,7 @@ function evaluateBonus(player, amount, type) {
   if (player.tags.includes("Bonus Abuse") || player.tags.includes("Arbitrage")) {
     add("Bonus Abuse / Arbitrage", "玩家有優惠濫用或套利標籤，額外優惠需 Risk 審核。", "blocked", "需審");
     route = "Team Leader + Risk";
+    approvals.push("Risk");
   } else {
     add("Bonus Abuse / Arbitrage", "未偵測優惠濫用標籤。", "open", "通過");
   }
@@ -1930,6 +2377,7 @@ function evaluateBonus(player, amount, type) {
   if (player.kyc !== "通過" || player.tags.includes("AML Watch")) {
     add("KYC / AML", "KYC 或 AML 狀態未完全通過，高額優惠與 manual credit 需暫停或審核。", "pending", "需確認");
     route = "Risk / Compliance";
+    approvals.push("Compliance");
   } else {
     add("KYC / AML", "KYC 狀態可支援一般發放流程。", "open", "通過");
   }
@@ -1937,13 +2385,28 @@ function evaluateBonus(player, amount, type) {
   if (numericAmount >= 10000 || (player.vipLevel >= 4 && numericAmount >= 5000)) {
     add("Amount Threshold", "金額達高額門檻，需 VIP Manager 與相關部門審批。", "pending", "需審");
     route = "VIP Manager + Risk";
+    approvals.push("VIP Manager");
   } else if (numericAmount > 0) {
     add("Amount Threshold", "金額未達高額門檻，可依玩家風險進入對應審批。", "open", "通過");
   } else {
     add("Amount Threshold", "請輸入金額後檢查審批路徑。", "pending", "待輸入");
   }
 
-  return { items: checks, route, blocked };
+  if (numericAmount > maxRecommended) {
+    add("Cost Control", `申請金額高於建議上限 ${formatMoney(maxRecommended)}，需補 ROI 與主管理由。`, "pending", "需理由");
+    if (!approvals.includes("VIP Manager")) approvals.push("VIP Manager");
+  } else {
+    add("Cost Control", `目前金額落在建議上限 ${formatMoney(maxRecommended)} 內。`, "open", "通過");
+  }
+
+  if (costRatio >= 60) {
+    add("Bonus Cost Ratio", `成本率預估 ${costRatio}%，可能壓縮 NGR，需 Manager 確認。`, "pending", "高成本");
+    if (!approvals.includes("Manager")) approvals.push("Manager");
+  } else {
+    add("Bonus Cost Ratio", `成本率預估 ${costRatio}%，可進入標準審批。`, "open", "通過");
+  }
+
+  return { items: checks, route, blocked, maxRecommended, costRatio, projectedNgr, approvals: [...new Set(approvals)] };
 }
 
 function approvalCard(request) {
@@ -2085,6 +2548,7 @@ function renderRisk() {
 
 function renderResponsibleGaming() {
   const rgPlayers = players.filter((player) => player.rgRisk !== "Low" || player.tags.includes("Big Loser"));
+  const highScoreCases = rgCases.filter((item) => item.riskScore >= 80).length;
   return `
     <section class="section-stack">
       <div class="view-header">
@@ -2098,7 +2562,7 @@ function renderResponsibleGaming() {
       <div class="dashboard-grid">
         ${metricCard("RG Alerts", riskAlerts.filter((alert) => alert.type === "RG Risk").length, "High risk requires immediate escalation", "down")}
         ${metricCard("Promo Blocked", 7, "促銷訊息自動停止", "flat")}
-        ${metricCard("Cooling-off Active", 3, "本週新增 1 位", "up")}
+        ${metricCard("高風險 Case", highScoreCases, "Score 80+ 需 Compliance", "down")}
         ${metricCard("Deposit Limit Requests", 5, "2 件待 Compliance", "flat")}
       </div>
 
@@ -2123,6 +2587,10 @@ function renderResponsibleGaming() {
                       <span class="severity ${riskClass(player.rgRisk)}">RG ${player.rgRisk}</span>
                     </div>
                     <p>${rgSignals(player).join(" / ")}</p>
+                    <div class="mini-signal-grid">
+                      ${rgSignalPill("Today P/L", formatMoney(player.metrics.todayPl), player.metrics.todayPl < -10000 ? "blocked" : "open")}
+                      ${rgSignalPill("Deposit Pattern", player.behavior.depositPattern, player.behavior.depositPattern.includes("短間隔") ? "pending" : "open")}
+                    </div>
                     <div class="profile-actions">
                       <button class="subtle-button" data-open-profile="${player.id}" type="button">Player 360</button>
                       <button class="ghost-button" data-action="rg-action" data-player="${player.id}" type="button">設定限制</button>
@@ -2161,7 +2629,57 @@ function renderResponsibleGaming() {
           </div>
         </section>
       </div>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Case Workflow</p>
+            <h3>RG Case 處理流程</h3>
+          </div>
+        </div>
+        <div class="case-grid">
+          ${rgCases.map((item) => rgCaseCard(item)).join("")}
+        </div>
+      </section>
     </section>
+  `;
+}
+
+function rgSignalPill(label, value, status) {
+  return `
+    <div class="signal-pill ${status}">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function rgCaseCard(item) {
+  const player = playerById(item.playerId);
+  return `
+    <article class="case-card">
+      <div class="case-score ${item.riskScore >= 80 ? "high" : item.riskScore >= 60 ? "medium" : "low"}">
+        <strong>${item.riskScore}</strong>
+        <span>Score</span>
+      </div>
+      <div class="case-body">
+        <div class="list-card-title">
+          <div>
+            <strong>${item.id} · ${player.name}</strong>
+            <p>${item.status} · Owner ${item.owner}</p>
+          </div>
+          <span class="status ${item.status.includes("Review") ? "pending" : "open"}">${item.nextReview}</span>
+        </div>
+        <p>${item.note}</p>
+        <div class="tag-row">
+          ${item.actions.map((action) => `<span class="tag ${action.includes("Block") ? "risk" : "warning"}">${action}</span>`).join("")}
+        </div>
+        <div class="profile-actions">
+          <button class="subtle-button" data-open-rg-case="${item.id}" type="button">查看證據</button>
+          <button class="ghost-button" data-action="rg-action" data-player="${item.playerId}" type="button">新增 Action</button>
+        </div>
+      </div>
+    </article>
   `;
 }
 
@@ -2308,6 +2826,7 @@ function showToast(message) {
 
 function openTicketModal(playerId) {
   const player = playerById(playerId);
+  const owner = suggestedOwner(player);
   showModal({
     eyebrow: "Ticket",
     title: `新增工單 · ${player.name}`,
@@ -2333,6 +2852,13 @@ function openTicketModal(playerId) {
             </select>
           </label>
           <label class="field">
+            <span>Owner</span>
+            <select id="ticketOwner">
+              ${agents.map((agent) => `<option ${agent.name === owner ? "selected" : ""}>${agent.name}</option>`).join("")}
+              <option ${owner === "Risk Team" ? "selected" : ""}>Risk Team</option>
+            </select>
+          </label>
+          <label class="field">
             <span>SLA</span>
             <select id="ticketSla">
               ${["30 分鐘", "1 小時", "2 小時", "4 小時", "24 小時"].map((item) => `<option>${item}</option>`).join("")}
@@ -2348,6 +2874,84 @@ function openTicketModal(playerId) {
           <button class="primary-button" type="submit">建立工單</button>
         </div>
       </form>
+    `
+  });
+}
+
+function openTicketDetailModal(ticketId) {
+  const ticket = ticketById(ticketId);
+  if (!ticket) return;
+  const player = playerById(ticket.playerId);
+  const history = ticket.history || [
+    { at: "建立", by: ticket.owner || suggestedOwner(player, ticket.category), body: ticket.description },
+    { at: ticket.due, by: ticket.team, body: `目前狀態：${ticket.status}` }
+  ];
+
+  showModal({
+    eyebrow: "Ticket Lifecycle",
+    title: `${ticket.id} · ${player.name}`,
+    body: `
+      <section class="detail-stack">
+        <div class="detail-grid">
+          ${summaryCell("Player", `${player.name} · ${player.id}`)}
+          ${summaryCell("Category", ticket.category)}
+          ${summaryCell("Priority", ticket.priority)}
+          ${summaryCell("SLA", ticket.due)}
+          ${summaryCell("Team", ticket.team)}
+          ${summaryCell("Owner", ticket.owner || suggestedOwner(player, ticket.category))}
+        </div>
+
+        <div class="check-list">
+          ${guardrail(player)}
+        </div>
+
+        <form class="modal-form" id="ticketUpdateForm" data-ticket="${ticket.id}">
+          <div class="form-grid">
+            <label class="field">
+              <span>Status</span>
+              <select id="ticketUpdateStatus">
+                ${["Open", "Payment Review", "Risk Review", "Compliance Review", "Escalated", "Resolved", "Closed"].map((item) => `<option ${ticket.status === item ? "selected" : ""}>${item}</option>`).join("")}
+              </select>
+            </label>
+            <label class="field">
+              <span>Owner</span>
+              <select id="ticketUpdateOwner">
+                ${agents.map((agent) => `<option ${ticket.owner === agent.name ? "selected" : ""}>${agent.name}</option>`).join("")}
+                <option ${ticket.owner === "Risk Team" ? "selected" : ""}>Risk Team</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span>Next Step / Internal Note</span>
+            <textarea id="ticketUpdateNote" placeholder="記錄處理依據、下一步、可揭露內容與升級原因"></textarea>
+          </label>
+          <div class="modal-form-row">
+            <button class="ghost-button" data-advance-ticket="${ticket.id}" type="button">推進至 ${nextTicketStatus(ticket)}</button>
+            <button class="primary-button" type="submit">更新工單</button>
+          </div>
+        </form>
+
+        <section>
+          <h3>處理時間軸</h3>
+          <div class="event-timeline">
+            ${history
+              .map(
+                (item) => `
+                  <article class="timeline-event">
+                    <span class="event-marker">${item.by}</span>
+                    <div>
+                      <div class="event-head">
+                        <strong>${item.body}</strong>
+                        <span>${item.at}</span>
+                      </div>
+                    </div>
+                  </article>
+                `
+              )
+              .join("")}
+          </div>
+        </section>
+      </section>
     `
   });
 }
@@ -2416,7 +3020,13 @@ function openRgModal(playerId) {
     eyebrow: "Responsible Gaming",
     title: `RG Action · ${player.name}`,
     body: `
-      <form class="modal-form" id="rgForm">
+      <form class="modal-form" id="rgForm" data-player="${player.id}">
+        <div class="detail-grid">
+          ${summaryCell("RG Risk", player.rgRisk)}
+          ${summaryCell("Today P/L", formatMoney(player.metrics.todayPl))}
+          ${summaryCell("Deposit Pattern", player.behavior.depositPattern)}
+          ${summaryCell("Signals", rgSignals(player).join(" / "))}
+        </div>
         <div class="check-list">
           ${[
             ["Cooling-off", "建議冷靜期，暫停遊玩指定期間。"],
@@ -2428,19 +3038,71 @@ function openRgModal(playerId) {
             .map(
               ([title, body]) => `
                 <label class="check-item">
-                  <strong><span>${title}</span><input type="checkbox" /></strong>
+                  <strong><span>${title}</span><input type="checkbox" value="${title}" /></strong>
                   <p>${body}</p>
                 </label>
               `
             )
             .join("")}
         </div>
+        <div class="form-grid">
+          <label class="field">
+            <span>Risk Score</span>
+            <input id="rgRiskScore" type="number" min="0" max="100" value="${player.rgRisk === "High" ? 88 : player.rgRisk === "Medium" ? 64 : 35}" />
+          </label>
+          <label class="field">
+            <span>Next Review</span>
+            <select id="rgNextReview">
+              <option>今日 16:30</option>
+              <option>明日 12:00</option>
+              <option>3 日後</option>
+              <option>7 日後</option>
+            </select>
+          </label>
+        </div>
         <label class="field">
           <span>Compliance Note</span>
-          <textarea placeholder="記錄玩家狀態、訊號與採取限制的依據"></textarea>
+          <textarea id="rgNote" placeholder="記錄玩家狀態、訊號與採取限制的依據"></textarea>
         </label>
         <button class="primary-button" type="submit">送出 RG 審核</button>
       </form>
+    `
+  });
+}
+
+function openRgCaseModal(caseId) {
+  const item = rgCaseById(caseId);
+  if (!item) return;
+  const player = playerById(item.playerId);
+  showModal({
+    eyebrow: "RG Evidence",
+    title: `${item.id} · ${player.name}`,
+    body: `
+      <section class="detail-stack">
+        <div class="detail-grid">
+          ${summaryCell("Risk Score", item.riskScore)}
+          ${summaryCell("Status", item.status)}
+          ${summaryCell("Owner", item.owner)}
+          ${summaryCell("Next Review", item.nextReview)}
+        </div>
+        <section>
+          <h3>Evidence</h3>
+          <div class="check-list">
+            ${item.evidence.map((evidence) => `<article class="check-item"><strong>${evidence}</strong><p>保留為 RG 判斷依據與後續稽核紀錄。</p></article>`).join("")}
+          </div>
+        </section>
+        <section>
+          <h3>Actions</h3>
+          <div class="tag-row">
+            ${item.actions.map((action) => `<span class="tag ${action.includes("Block") ? "risk" : "warning"}">${action}</span>`).join("")}
+          </div>
+          <p class="message-meta">${item.note}</p>
+        </section>
+        <div class="modal-form-row">
+          <button class="ghost-button" data-action="rg-action" data-player="${item.playerId}" type="button">新增 Action</button>
+          <button class="primary-button" data-resolve-rg="${item.id}" type="button">標記已 Review</button>
+        </div>
+      </section>
     `
   });
 }
@@ -2532,6 +3194,51 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const ticketButton = event.target.closest("[data-open-ticket]");
+  if (ticketButton) {
+    openTicketDetailModal(ticketButton.dataset.openTicket);
+    return;
+  }
+
+  const advanceTicketButton = event.target.closest("[data-advance-ticket]");
+  if (advanceTicketButton) {
+    const ticket = ticketById(advanceTicketButton.dataset.advanceTicket);
+    if (ticket) {
+      ticket.status = nextTicketStatus(ticket);
+      if (ticket.status === "Resolved" || ticket.status === "Closed") {
+        ticket.sla = "safe";
+        ticket.due = "完成";
+      }
+      ticket.history = [
+        ...(ticket.history || []),
+        { at: "剛剛", by: state.role, body: `狀態推進至 ${ticket.status}` }
+      ];
+      closeModal();
+      showToast(`工單 ${ticket.id} 已推進至 ${ticket.status}。`);
+      render();
+    }
+    return;
+  }
+
+  const rgCaseButton = event.target.closest("[data-open-rg-case]");
+  if (rgCaseButton) {
+    openRgCaseModal(rgCaseButton.dataset.openRgCase);
+    return;
+  }
+
+  const resolveRgButton = event.target.closest("[data-resolve-rg]");
+  if (resolveRgButton) {
+    const item = rgCaseById(resolveRgButton.dataset.resolveRg);
+    if (item) {
+      item.status = "Reviewed";
+      item.nextReview = "7 日後";
+      closeModal();
+      showToast(`${item.id} 已標記完成 review，並排入後續追蹤。`);
+      render();
+    }
+    return;
+  }
+
   const actionButton = event.target.closest("[data-action]");
   if (actionButton) {
     const playerId = actionButton.dataset.player || state.activePlayerId;
@@ -2540,6 +3247,10 @@ document.addEventListener("click", (event) => {
     if (action === "add-note") openNoteModal(playerId);
     if (action === "create-task") openTaskModal(playerId);
     if (action === "rg-action") openRgModal(playerId);
+    if (action === "assign-next") {
+      const next = routingQueueItems()[0];
+      if (next) showToast(`${next.source} ${next.id} 已建議分派給 ${next.owner}。`);
+    }
     if (action === "risk-escalate" || action === "risk-note") {
       showToast("Risk alert 已建立處理紀錄，並通知 Risk Team。");
     }
@@ -2631,21 +3342,51 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "ticketForm") {
     event.preventDefault();
     const playerId = event.target.dataset.player;
+    const player = playerById(playerId);
+    const category = document.querySelector("#ticketCategory").value;
+    const owner = document.querySelector("#ticketOwner").value || suggestedOwner(player, category);
     tickets.unshift({
       id: `T-${Math.floor(6000 + Math.random() * 300)}`,
       playerId,
-      category: document.querySelector("#ticketCategory").value,
+      category,
       priority: document.querySelector("#ticketPriority").value,
       status: "Open",
       team: document.querySelector("#ticketTeam").value,
-      owner: state.role,
+      owner,
       sla: "safe",
       due: document.querySelector("#ticketSla").value,
-      description: document.querySelector("#ticketDescription").value
+      description: document.querySelector("#ticketDescription").value,
+      history: [
+        { at: "剛剛", by: state.role, body: "建立工單" },
+        { at: "剛剛", by: owner, body: `建議分派：${owner}` }
+      ]
     });
     closeModal();
     showToast("工單已建立。");
     render();
+  }
+
+  if (event.target.id === "ticketUpdateForm") {
+    event.preventDefault();
+    const ticket = ticketById(event.target.dataset.ticket);
+    if (ticket) {
+      const status = document.querySelector("#ticketUpdateStatus").value;
+      const owner = document.querySelector("#ticketUpdateOwner").value;
+      const note = document.querySelector("#ticketUpdateNote").value.trim();
+      ticket.status = status;
+      ticket.owner = owner;
+      if (status === "Resolved" || status === "Closed") {
+        ticket.sla = "safe";
+        ticket.due = "完成";
+      }
+      ticket.history = [
+        ...(ticket.history || []),
+        { at: "剛剛", by: owner, body: note || `狀態更新為 ${status}` }
+      ];
+      closeModal();
+      showToast(`工單 ${ticket.id} 已更新。`);
+      render();
+    }
   }
 
   if (event.target.id === "noteForm") {
@@ -2672,8 +3413,36 @@ document.addEventListener("submit", (event) => {
 
   if (event.target.id === "rgForm") {
     event.preventDefault();
+    const playerId = event.target.dataset.player;
+    const player = playerById(playerId);
+    const actions = [...event.target.querySelectorAll("input[type='checkbox']:checked")].map((input) => input.value);
+    const riskScore = Number(document.querySelector("#rgRiskScore").value) || (player.rgRisk === "High" ? 88 : 55);
+    const nextReview = document.querySelector("#rgNextReview").value;
+    const note = document.querySelector("#rgNote").value.trim() || "RG action 已送出，等待 Compliance 審核。";
+    rgCases.unshift({
+      id: `RG-${Math.floor(910 + Math.random() * 80)}`,
+      playerId,
+      riskScore,
+      status: "Compliance Review",
+      owner: "RG Officer",
+      nextReview,
+      actions: actions.length ? actions : ["Manual Review"],
+      evidence: rgSignals(player),
+      note
+    });
+    if (!riskAlerts.some((alert) => alert.playerId === playerId && alert.type === "RG Risk")) {
+      riskAlerts.unshift({
+        id: `R-${Math.floor(460 + Math.random() * 80)}`,
+        playerId,
+        type: "RG Risk",
+        severity: riskScore >= 80 ? "High" : "Medium",
+        status: "Review",
+        action: actions.length ? actions.join(" / ") : "人工 RG 審核"
+      });
+    }
     closeModal();
     showToast("RG Action 已送出 Compliance 審核。");
+    render();
   }
 });
 

@@ -55,6 +55,12 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 264px minmax(0, 1fr);
@@ -391,6 +397,14 @@ h4 {
 .timeline-item,
 .check-item,
 .approval-card,
+.queue-item,
+.agent-card,
+.ticket-column,
+.ticket-card,
+.work-link-card,
+.timeline-event,
+.case-card,
+.signal-pill,
 .template-pill,
 .report-tile,
 .setting-row {
@@ -624,7 +638,11 @@ tbody tr:last-child td {
 .check-list,
 .timeline,
 .approval-list,
-.settings-list {
+.settings-list,
+.queue-list,
+.agent-grid,
+.ticket-column-list,
+.event-timeline {
   display: grid;
   gap: 10px;
 }
@@ -653,6 +671,12 @@ tbody tr:last-child td {
 .timeline-item p,
 .check-item p,
 .approval-card p,
+.queue-item p,
+.agent-card p,
+.ticket-card p,
+.work-link-card p,
+.timeline-event p,
+.case-card p,
 .report-tile p,
 .setting-row p {
   margin-bottom: 0;
@@ -665,6 +689,52 @@ tbody tr:last-child td {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 420px);
   gap: 16px;
+}
+
+.queue-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+}
+
+.queue-meta,
+.row-actions,
+.ticket-card-foot,
+.tag-row,
+.section-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.queue-meta {
+  justify-content: flex-end;
+}
+
+.agent-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.agent-card {
+  padding: 12px;
+}
+
+.capacity-bar {
+  height: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.capacity-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
 }
 
 .filter-bar {
@@ -827,6 +897,62 @@ tbody tr:last-child td {
 
 .profile-section:first-child {
   border-top: 0;
+}
+
+.section-title-row {
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.timeline-event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 10px;
+  padding: 11px;
+  background: #fbfcfa;
+}
+
+.event-marker {
+  align-self: start;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.event-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.event-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.work-link-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.work-link-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 12px;
+}
+
+.work-link-card .subtle-button {
+  justify-self: start;
 }
 
 .trend-chart {
@@ -1049,6 +1175,76 @@ tbody tr:last-child td {
   gap: 16px;
 }
 
+.ticket-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.ticket-column {
+  min-width: 220px;
+  padding: 12px;
+  background: #fbfcfa;
+}
+
+.ticket-column-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ticket-column-head .nav-count {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.ticket-card {
+  padding: 12px;
+  background: var(--surface);
+}
+
+.ticket-card.breached {
+  border-left: 4px solid var(--danger);
+}
+
+.ticket-card.due {
+  border-left: 4px solid var(--warning);
+}
+
+.ticket-card.safe {
+  border-left: 4px solid var(--ok);
+}
+
+.ticket-card-foot {
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+.detail-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.detail-grid,
+.policy-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--line);
+}
+
+.policy-strip {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
 .bonus-form {
   display: grid;
   gap: 14px;
@@ -1096,6 +1292,92 @@ tbody tr:last-child td {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.case-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.case-card {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+}
+
+.case-score {
+  min-height: 82px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  border-radius: var(--radius);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.case-score.medium {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.case-score.high {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.case-score strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.case-score span {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.case-body {
+  min-width: 0;
+}
+
+.mini-signal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.signal-pill {
+  padding: 9px 10px;
+  background: var(--surface-soft);
+}
+
+.signal-pill span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.signal-pill strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.signal-pill.blocked {
+  border-color: var(--danger-soft);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.signal-pill.pending {
+  border-color: var(--warning-soft);
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 
 .risk-card {
@@ -1242,6 +1524,12 @@ tbody tr:last-child td {
   text-align: center;
 }
 
+.empty-state.compact {
+  min-height: 86px;
+  padding: 12px;
+  font-size: 13px;
+}
+
 .screen-reader-only {
   position: absolute;
   width: 1px;
@@ -1286,7 +1574,8 @@ tbody tr:last-child td {
   .dashboard-grid,
   .risk-grid,
   .report-grid,
-  .settings-grid {
+  .settings-grid,
+  .case-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1373,6 +1662,11 @@ tbody tr:last-child td {
   .risk-grid,
   .report-grid,
   .settings-grid,
+  .case-grid,
+  .agent-grid,
+  .work-link-grid,
+  .detail-grid,
+  .policy-strip,
   .form-grid,
   .summary-grid {
     grid-template-columns: 1fr;
@@ -1397,6 +1691,16 @@ tbody tr:last-child td {
 
   .player-card {
     grid-template-columns: 1fr;
+  }
+
+  .queue-item,
+  .case-card,
+  .timeline-event {
+    grid-template-columns: 1fr;
+  }
+
+  .queue-meta {
+    justify-content: flex-start;
   }
 
   .message-bubble {
