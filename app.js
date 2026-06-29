@@ -2,6 +2,7 @@ const navItems = [
   { id: "dashboard", label: "儀表板", icon: "DB" },
   { id: "players", label: "VIP 玩家", icon: "P" },
   { id: "inbox", label: "收件匣", icon: "IN" },
+  { id: "ai", label: "AI 客服", icon: "AI" },
   { id: "tickets", label: "工單", icon: "T" },
   { id: "bonus", label: "優惠", icon: "B" },
   { id: "tasks", label: "任務", icon: "TS" },
@@ -1054,6 +1055,46 @@ const templates = [
   }
 ];
 
+const aiKnowledgeBase = [
+  {
+    id: "KB-RG-001",
+    category: "Responsible Gaming",
+    title: "RG High 玩家回覆規範",
+    owner: "Compliance",
+    updated: "2026-06-20",
+    summary: "禁止促銷式挽留，優先提供冷靜期、存款限制、投注限制與自我排除資訊。"
+  },
+  {
+    id: "KB-PAY-014",
+    category: "Withdrawal Delay",
+    title: "出金審核可揭露話術",
+    owner: "Payment",
+    updated: "2026-06-18",
+    summary: "不可承諾到帳時間；僅可說明目前可揭露的審核階段與下一次更新方式。"
+  },
+  {
+    id: "KB-BON-008",
+    category: "Bonus Request",
+    title: "優惠補償審批與阻擋規則",
+    owner: "VIP Manager",
+    updated: "2026-06-16",
+    summary: "RG High、Bonus Abuse、Arbitrage、KYC 未完成時不可自動發放優惠。"
+  },
+  {
+    id: "KB-COM-005",
+    category: "Complaint",
+    title: "投訴受理與升級流程",
+    owner: "Team Leader",
+    updated: "2026-06-12",
+    summary: "投訴需建立工單、標記 SLA、保留完整對話與內部處理紀錄。"
+  }
+];
+
+let aiAuditEvents = [
+  { id: "AI-9007", conversationId: "C-1008", action: "Blocked promo wording", status: "Guardrail", at: "今日 14:04" },
+  { id: "AI-9003", conversationId: "C-1007", action: "Suggested Payment handoff", status: "Review", at: "今日 13:44" }
+];
+
 const state = {
   view: "dashboard",
   locale: localeNames[savedLocale] ? savedLocale : "zh",
@@ -1069,6 +1110,7 @@ const titles = {
   dashboard: ["VIP 控制中心", "儀表板"],
   players: ["Player 360", "VIP 玩家"],
   inbox: ["全渠道客服", "收件匣"],
+  ai: ["AI Copilot", "AI 客服"],
   tickets: ["SLA 營運", "工單"],
   bonus: ["成本控管", "優惠與補償"],
   tasks: ["留存流程", "跟進任務"],
@@ -1346,6 +1388,114 @@ function routingQueueItems() {
   });
 }
 
+function conversationText(conversation) {
+  return conversation.messages.map((message) => message.body).join(" ");
+}
+
+function aiAnalyzeConversation(conversation) {
+  const player = playerById(conversation.playerId);
+  const text = `${conversation.topic} ${conversationText(conversation)}`;
+  let intent = "General VIP Service";
+  let category = "General";
+  let confidence = 76;
+
+  if (/出金|提款|withdraw|款項|到帳|KYC/i.test(text)) {
+    intent = "出金 / KYC 進度查詢";
+    category = "Withdrawal Delay";
+    confidence = 94;
+  } else if (/補償|優惠|bonus|返水|free spin|活動碼/i.test(text)) {
+    intent = "優惠 / 補償請求";
+    category = "Bonus Request";
+    confidence = 91;
+  } else if (/投訴|complaint|不滿|客訴/i.test(text)) {
+    intent = "投訴處理";
+    category = "Complaint";
+    confidence = 89;
+  }
+
+  if (player.rgRisk === "High" || /一直輸|虧損|翻本|冷靜期|限制/i.test(text)) {
+    intent = "責任博彩關懷";
+    category = "Responsible Gaming";
+    confidence = Math.max(confidence, 96);
+  }
+
+  const blockers = [];
+  if (player.rgRisk === "High") blockers.push("RG High");
+  if (player.kyc !== "通過") blockers.push("KYC 未完成");
+  if (player.tags.includes("AML Watch")) blockers.push("AML Watch");
+  if (player.tags.includes("Bonus Abuse") || player.tags.includes("Arbitrage")) blockers.push("Bonus Abuse / Arbitrage");
+  if (conversation.priority === "P0" || conversation.priority === "P1") blockers.push(`${conversation.priority} 優先級`);
+
+  const severity = blockers.some((item) => /RG High|AML|P0|Bonus Abuse/i.test(item)) ? "high" : blockers.length ? "medium" : "low";
+  const autoReplyAllowed = severity === "low" && !["Responsible Gaming", "Withdrawal Delay", "Bonus Request", "Complaint"].includes(category);
+  const route = category === "Responsible Gaming"
+    ? "Compliance / RG Officer"
+    : category === "Withdrawal Delay"
+      ? "Payment Desk"
+      : category === "Bonus Request"
+        ? "Team Leader + Risk"
+        : category === "Complaint"
+          ? "Team Leader"
+          : player.agent;
+
+  return {
+    conversation,
+    player,
+    intent,
+    category,
+    confidence,
+    severity,
+    blockers,
+    route,
+    autoReplyAllowed,
+    summary: aiConversationSummary(conversation, player, category),
+    suggestedReply: aiSuggestedReply(category, player),
+    sources: aiKnowledgeBase.filter((item) => item.category === category || (category === "General" && item.category === "Complaint")).slice(0, 2)
+  };
+}
+
+function aiConversationSummary(conversation, player, category) {
+  const latestPlayerMessage = [...conversation.messages].reverse().find((message) => message.sender === "player");
+  const pieces = [
+    `${player.name}（${player.id} / VIP ${player.vipLevel}）透過 ${conversation.channel} 詢問：${conversation.topic}。`,
+    latestPlayerMessage ? `最新玩家訊息：${latestPlayerMessage.body}` : "目前沒有玩家最新訊息。",
+    `AI 判斷類型：${category}；風險標籤：${player.tags.join(" / ")}。`
+  ];
+  if (player.rgRisk === "High") pieces.push("玩家為 RG High，不可使用促銷或刺激投注話術。");
+  if (player.kyc !== "通過") pieces.push("KYC 未完成，只能說明可揭露的審核狀態。");
+  return pieces;
+}
+
+function aiSuggestedReply(category, player) {
+  if (category === "Responsible Gaming") {
+    return "我注意到你今天的遊玩強度比平常高。若你需要，我可以協助說明冷靜期、存款限制或投注限制等工具；也可以先協助你暫停接收促銷訊息。";
+  }
+  if (category === "Withdrawal Delay") {
+    return player.kyc === "通過"
+      ? "目前款項正在例行審核流程中，我會協助追蹤可揭露的進度，並在狀態更新時通知你。"
+      : "目前帳戶仍有 KYC 補件或審核項目，因此我只能協助確認可揭露的審核狀態，並同步相關團隊更新下一步。";
+  }
+  if (category === "Bonus Request") {
+    return player.rgRisk === "High" || player.tags.includes("Bonus Abuse")
+      ? "我已協助確認目前帳戶不適合額外優惠或補償流程；我可以改為協助確認帳戶狀態、可用工具或建立工單追蹤。"
+      : "我可以先協助確認你目前的優惠資格與活動條件；若需要額外補償，會依照 VIP 等級、帳戶狀態與審批流程處理。";
+  }
+  if (category === "Complaint") {
+    return "我已了解你的問題，會先建立工單並保留完整紀錄，相關團隊會依 SLA 優先處理並回覆可揭露的進度。";
+  }
+  return "我可以先協助確認帳戶狀態與可用選項，並依照平台規則提供下一步。";
+}
+
+function aiAnalyses() {
+  return conversations.map((conversation) => aiAnalyzeConversation(conversation));
+}
+
+function aiStatusLabel(analysis) {
+  if (analysis.autoReplyAllowed) return ["可自動回覆", "open"];
+  if (analysis.severity === "high") return ["需人工接管", "blocked"];
+  return ["需審核", "pending"];
+}
+
 function vipClass(level) {
   return `vip${level}`;
 }
@@ -1371,6 +1521,7 @@ function renderNav() {
   const counts = {
     dashboard: tasks.filter((task) => task.status === "Open").length,
     inbox: conversations.filter((conversation) => conversation.status === "Open").length,
+    ai: aiAnalyses().filter((analysis) => !analysis.autoReplyAllowed).length,
     tickets: tickets.filter((ticket) => ticket.status !== "Closed").length,
     risk: riskAlerts.filter((alert) => alert.status !== "Closed").length,
     rg: riskAlerts.filter((alert) => alert.type === "RG Risk").length
@@ -1405,6 +1556,7 @@ function render() {
     dashboard: renderDashboard,
     players: renderPlayers,
     inbox: renderInbox,
+    ai: renderAiDesk,
     tickets: renderTickets,
     bonus: renderBonus,
     tasks: renderTasks,
@@ -2014,6 +2166,7 @@ function lineChart(primary, secondary) {
 function renderInbox() {
   const conversation = conversations.find((item) => item.id === state.activeConversationId) || conversations[0];
   const player = playerById(conversation.playerId);
+  const ai = aiAnalyzeConversation(conversation);
 
   return `
     <section class="inbox-layout">
@@ -2051,6 +2204,8 @@ function renderInbox() {
       </section>
 
       <aside class="context-panel">
+        ${renderAiCopilot(ai)}
+
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -2080,6 +2235,44 @@ function renderInbox() {
           </div>
         </section>
       </aside>
+    </section>
+  `;
+}
+
+function renderAiCopilot(analysis) {
+  const [label, status] = aiStatusLabel(analysis);
+  return `
+    <section class="panel ai-copilot-panel">
+      <div class="panel-header">
+        <div>
+          <p class="eyebrow">AI Copilot</p>
+          <h3>客服輔助</h3>
+        </div>
+        <span class="status ${status}">${label}</span>
+      </div>
+      <div class="ai-summary-list">
+        ${analysis.summary.map((item) => `<p>${item}</p>`).join("")}
+      </div>
+      <div class="ai-score-row">
+        <span class="severity ${analysis.severity}">${analysis.intent}</span>
+        <span class="pill">${analysis.confidence}% confidence</span>
+      </div>
+      ${
+        analysis.blockers.length
+          ? `<div class="tag-row">${analysis.blockers.map((item) => `<span class="tag risk">${item}</span>`).join("")}</div>`
+          : `<span class="tag ok">無硬性阻擋</span>`
+      }
+      <div class="ai-reply-preview">
+        <strong>建議回覆</strong>
+        <p>${analysis.suggestedReply}</p>
+      </div>
+      <div class="knowledge-list compact">
+        ${analysis.sources.map((item) => `<span class="tag warning">${item.id}</span>`).join("")}
+      </div>
+      <div class="profile-actions">
+        <button class="subtle-button" data-ai-apply-reply="${analysis.conversation.id}" type="button">套用建議</button>
+        <button class="ghost-button" data-ai-handoff="${analysis.conversation.id}" type="button">轉真人摘要</button>
+      </div>
     </section>
   `;
 }
@@ -2122,6 +2315,145 @@ function blockedOfferReason(player) {
   if (player.tags.includes("Bonus Abuse")) return "Bonus Abuse：需主管與 Risk 審核";
   if (player.kyc !== "通過") return "KYC 未完成：限制出金與高額優惠";
   return "無硬性阻擋，仍需依額度規則檢查";
+}
+
+function renderAiDesk() {
+  const analyses = aiAnalyses();
+  const highRisk = analyses.filter((analysis) => analysis.severity === "high").length;
+  const needsReview = analyses.filter((analysis) => !analysis.autoReplyAllowed).length;
+  const autoAllowed = analyses.filter((analysis) => analysis.autoReplyAllowed).length;
+  const avgConfidence = Math.round(analyses.reduce((sum, analysis) => sum + analysis.confidence, 0) / Math.max(1, analyses.length));
+
+  return `
+    <section class="section-stack">
+      <div class="view-header">
+        <div>
+          <p class="eyebrow">AI Service Layer</p>
+          <h2>AI 客服工作台</h2>
+        </div>
+        <button class="primary-button" data-action="ai-run-triage" type="button">重新執行分流</button>
+      </div>
+
+      <div class="dashboard-grid">
+        ${metricCard("AI 待審", needsReview, "需真人 / 主管 / 合規確認", needsReview ? "down" : "flat")}
+        ${metricCard("高風險攔截", highRisk, "RG / AML / P0 / Abuse", highRisk ? "down" : "flat")}
+        ${metricCard("可自動回覆", autoAllowed, "低風險 FAQ 或一般服務", "up")}
+        ${metricCard("平均信心", `${avgConfidence}%`, "意圖分類 confidence", "flat")}
+      </div>
+
+      <div class="ai-layout">
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">AI Triage Queue</p>
+              <h3>對話意圖與轉接判斷</h3>
+            </div>
+          </div>
+          <div class="ai-triage-list">
+            ${analyses.map((analysis) => aiTriageCard(analysis)).join("")}
+          </div>
+        </section>
+
+        <aside class="section-stack">
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Guardrails</p>
+                <h3>AI 可做 / 不可做</h3>
+              </div>
+            </div>
+            <div class="check-list">
+              ${[
+                ["自動回答", "一般 FAQ、流程說明、低風險狀態查詢。", "open"],
+                ["需人工審核", "優惠、補償、VIP 特例、Payment 進度。", "pending"],
+                ["禁止自動處理", "RG High、AML Watch、Bonus Abuse、出金承諾、風控細節。", "blocked"]
+              ]
+                .map(
+                  ([title, body, status]) => `
+                    <article class="check-item">
+                      <strong>${title}<span class="status ${status}">${status === "open" ? "允許" : status === "pending" ? "審核" : "阻擋"}</span></strong>
+                      <p>${body}</p>
+                    </article>
+                  `
+                )
+                .join("")}
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Knowledge Base</p>
+                <h3>核准知識來源</h3>
+              </div>
+            </div>
+            <div class="knowledge-list">
+              ${aiKnowledgeBase.map((item) => knowledgeCard(item)).join("")}
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Audit Trail</p>
+                <h3>AI 稽核紀錄</h3>
+              </div>
+            </div>
+            <div class="timeline">
+              ${aiAuditEvents
+                .map((event) => timelineItem(`${event.id} · ${event.status}`, `${event.at} · ${event.conversationId} · ${event.action}`))
+                .join("")}
+            </div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  `;
+}
+
+function aiTriageCard(analysis) {
+  const [label, status] = aiStatusLabel(analysis);
+  return `
+    <article class="ai-triage-card ${analysis.severity}">
+      <div class="list-card-title">
+        <div>
+          <strong>${analysis.intent}</strong>
+          <p>${analysis.player.name} · ${analysis.conversation.id} · ${analysis.conversation.channel}</p>
+        </div>
+        <span class="status ${status}">${label}</span>
+      </div>
+      <div class="ai-score-row">
+        <span class="severity ${analysis.severity}">Confidence ${analysis.confidence}%</span>
+        <span class="pill">Route ${analysis.route}</span>
+      </div>
+      <p>${analysis.summary[0]}</p>
+      ${analysis.blockers.length ? `<div class="tag-row">${analysis.blockers.map((item) => `<span class="tag risk">${item}</span>`).join("")}</div>` : ""}
+      <div class="ai-reply-preview">
+        <strong>建議回覆</strong>
+        <p>${analysis.suggestedReply}</p>
+      </div>
+      <div class="profile-actions">
+        <button class="subtle-button" data-open-ai-conversation="${analysis.conversation.id}" type="button">開啟對話</button>
+        <button class="ghost-button" data-ai-apply-reply="${analysis.conversation.id}" type="button">套用建議</button>
+        <button class="ghost-button" data-ai-handoff="${analysis.conversation.id}" type="button">轉真人摘要</button>
+      </div>
+    </article>
+  `;
+}
+
+function knowledgeCard(item) {
+  return `
+    <article class="knowledge-card">
+      <div class="list-card-title">
+        <div>
+          <strong>${item.id} · ${item.title}</strong>
+          <p>${item.category} · Owner ${item.owner}</p>
+        </div>
+        <span class="status open">${item.updated}</span>
+      </div>
+      <p>${item.summary}</p>
+    </article>
+  `;
 }
 
 function renderTickets() {
@@ -3268,6 +3600,53 @@ function openRgCaseModal(caseId) {
   });
 }
 
+function openAiHandoffModal(conversationId) {
+  const conversation = conversations.find((item) => item.id === conversationId);
+  if (!conversation) return;
+  const analysis = aiAnalyzeConversation(conversation);
+  showModal({
+    eyebrow: "AI Handoff",
+    title: `轉真人摘要 · ${analysis.player.name}`,
+    body: `
+      <section class="detail-stack">
+        <div class="detail-grid">
+          ${summaryCell("Intent", analysis.intent)}
+          ${summaryCell("Confidence", `${analysis.confidence}%`)}
+          ${summaryCell("Route", analysis.route)}
+          ${summaryCell("Status", aiStatusLabel(analysis)[0])}
+        </div>
+        <section>
+          <h3>交接摘要</h3>
+          <div class="check-list">
+            ${analysis.summary.map((item) => `<article class="check-item"><strong>${item}</strong><p>已納入真人接手上下文。</p></article>`).join("")}
+          </div>
+        </section>
+        <section>
+          <h3>風險與限制</h3>
+          <div class="tag-row">
+            ${
+              analysis.blockers.length
+                ? analysis.blockers.map((item) => `<span class="tag risk">${item}</span>`).join("")
+                : `<span class="tag ok">無硬性阻擋</span>`
+            }
+          </div>
+          <p class="message-meta">AI 建議路徑：${analysis.route}。高風險案件需由真人確認後回覆。</p>
+        </section>
+        <section>
+          <h3>AI 建議回覆</h3>
+          <article class="ai-reply-preview">
+            <p>${analysis.suggestedReply}</p>
+          </article>
+        </section>
+        <div class="modal-form-row">
+          <button class="ghost-button" data-open-ai-conversation="${conversation.id}" type="button">回到對話</button>
+          <button class="primary-button" data-ai-create-ticket="${conversation.id}" type="button">建立交接工單</button>
+        </div>
+      </section>
+    `
+  });
+}
+
 function checkCompliance(text) {
   const blocked = [
     "再玩一下就會贏",
@@ -3355,6 +3734,71 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const openAiConversationButton = event.target.closest("[data-open-ai-conversation]");
+  if (openAiConversationButton) {
+    const conversation = conversations.find((item) => item.id === openAiConversationButton.dataset.openAiConversation);
+    if (conversation) {
+      state.activeConversationId = conversation.id;
+      state.activePlayerId = conversation.playerId;
+      closeModal();
+      setView("inbox");
+    }
+    return;
+  }
+
+  const applyAiReplyButton = event.target.closest("[data-ai-apply-reply]");
+  if (applyAiReplyButton) {
+    const conversation = conversations.find((item) => item.id === applyAiReplyButton.dataset.aiApplyReply);
+    if (conversation) {
+      const analysis = aiAnalyzeConversation(conversation);
+      state.activeConversationId = conversation.id;
+      state.activePlayerId = conversation.playerId;
+      if (state.view !== "inbox") {
+        setView("inbox");
+      }
+      const input = document.querySelector("#messageInput");
+      if (input) {
+        input.value = analysis.suggestedReply;
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+      }
+      aiAuditEvents.unshift({ id: `AI-${Math.floor(9100 + Math.random() * 800)}`, conversationId: conversation.id, action: "Applied suggested reply", status: "Draft", at: "剛剛" });
+      showToast("AI 建議回覆已套用到輸入框，送出前仍需真人確認。");
+    }
+    return;
+  }
+
+  const aiHandoffButton = event.target.closest("[data-ai-handoff]");
+  if (aiHandoffButton) {
+    openAiHandoffModal(aiHandoffButton.dataset.aiHandoff);
+    return;
+  }
+
+  const aiCreateTicketButton = event.target.closest("[data-ai-create-ticket]");
+  if (aiCreateTicketButton) {
+    const conversation = conversations.find((item) => item.id === aiCreateTicketButton.dataset.aiCreateTicket);
+    if (conversation) {
+      const analysis = aiAnalyzeConversation(conversation);
+      tickets.unshift({
+        id: `T-${Math.floor(6300 + Math.random() * 300)}`,
+        playerId: conversation.playerId,
+        category: analysis.category,
+        priority: analysis.severity === "high" ? "P0" : analysis.severity === "medium" ? "P1" : "P2",
+        status: "Open",
+        team: analysis.route,
+        owner: analysis.route,
+        sla: analysis.severity === "high" ? "due" : "safe",
+        due: analysis.severity === "high" ? "30 分鐘" : "2 小時",
+        description: `AI handoff：${analysis.summary.join(" ")}`
+      });
+      aiAuditEvents.unshift({ id: `AI-${Math.floor(9100 + Math.random() * 800)}`, conversationId: conversation.id, action: "Created handoff ticket", status: "Handoff", at: "剛剛" });
+      closeModal();
+      showToast("AI 交接工單已建立。");
+      render();
+    }
+    return;
+  }
+
   const ticketButton = event.target.closest("[data-open-ticket]");
   if (ticketButton) {
     openTicketDetailModal(ticketButton.dataset.openTicket);
@@ -3411,6 +3855,11 @@ document.addEventListener("click", (event) => {
     if (action === "assign-next") {
       const next = routingQueueItems()[0];
       if (next) showToast(`${next.source} ${next.id} 已建議分派給 ${next.owner}。`);
+    }
+    if (action === "ai-run-triage") {
+      aiAuditEvents.unshift({ id: `AI-${Math.floor(9100 + Math.random() * 800)}`, conversationId: "ALL", action: "Manual triage refresh", status: "Audit", at: "剛剛" });
+      showToast("AI 分流已重新執行，稽核紀錄已更新。");
+      render();
     }
     if (action === "risk-escalate" || action === "risk-note") {
       showToast("Risk alert 已建立處理紀錄，並通知 Risk Team。");

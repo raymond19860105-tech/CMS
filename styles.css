@@ -405,6 +405,9 @@ h4 {
 .timeline-event,
 .case-card,
 .signal-pill,
+.ai-triage-card,
+.ai-reply-preview,
+.knowledge-card,
 .report-insight,
 .report-action,
 .template-pill,
@@ -642,6 +645,9 @@ tbody tr:last-child td {
 .approval-list,
 .settings-list,
 .queue-list,
+.ai-triage-list,
+.ai-summary-list,
+.knowledge-list,
 .agent-grid,
 .ticket-column-list,
 .event-timeline {
@@ -679,6 +685,9 @@ tbody tr:last-child td {
 .work-link-card p,
 .timeline-event p,
 .case-card p,
+.ai-triage-card p,
+.ai-reply-preview p,
+.knowledge-card p,
 .report-insight p,
 .report-action p,
 .report-tile p,
@@ -1114,6 +1123,76 @@ tbody tr:last-child td {
 .message-meta {
   color: var(--muted);
   font-size: 12px;
+}
+
+.ai-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  gap: 16px;
+  align-items: start;
+}
+
+.ai-triage-card {
+  padding: 14px;
+  border-left: 4px solid var(--ok);
+}
+
+.ai-triage-card.medium {
+  border-left-color: var(--warning);
+}
+
+.ai-triage-card.high {
+  border-left-color: var(--danger);
+}
+
+.ai-score-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.ai-reply-preview {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border-style: dashed;
+  background: #fbfcfa;
+}
+
+.ai-reply-preview strong {
+  font-size: 13px;
+}
+
+.ai-copilot-panel {
+  border-left: 4px solid var(--info);
+}
+
+.ai-summary-list {
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.ai-summary-list p {
+  margin: 0;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.knowledge-card {
+  padding: 12px;
+}
+
+.knowledge-list.compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .composer {
@@ -1696,6 +1775,7 @@ tbody tr:last-child td {
   .two-column,
   .split-band,
   .player-layout,
+  .ai-layout,
   .bonus-layout,
   .inbox-layout {
     grid-template-columns: 1fr;
@@ -1817,6 +1897,7 @@ tbody tr:last-child td {
 
   .queue-item,
   .case-card,
+  .ai-layout,
   .timeline-event {
     grid-template-columns: 1fr;
   }
