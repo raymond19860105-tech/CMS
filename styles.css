@@ -1132,9 +1132,36 @@ tbody tr:last-child td {
   align-items: start;
 }
 
+.ai-command-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+.ai-main-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ai-main-panel .panel-header {
+  margin-bottom: 0;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fbfcfa;
+}
+
+.ai-side-rail {
+  align-self: start;
+}
+
 .ai-triage-card {
-  padding: 14px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
   border-left: 4px solid var(--ok);
+  border-radius: 0;
+  padding: 13px 16px;
+  background: var(--surface);
 }
 
 .ai-triage-card.medium {
@@ -1143,6 +1170,48 @@ tbody tr:last-child td {
 
 .ai-triage-card.high {
   border-left-color: var(--danger);
+}
+
+.ai-triage-card:last-child {
+  border-bottom: 0;
+}
+
+.ai-queue-main {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(220px, 1.1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.ai-queue-main .status {
+  justify-self: start;
+}
+
+.ai-queue-main .profile-actions {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.ai-queue-main .profile-actions button {
+  min-height: 32px;
+  padding: 6px 9px;
+}
+
+.ai-person-cell,
+.ai-intent-cell {
+  min-width: 0;
+}
+
+.ai-person-cell strong,
+.ai-intent-cell strong {
+  display: block;
+}
+
+.ai-person-cell p,
+.ai-intent-cell p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .ai-score-row {
@@ -1163,6 +1232,32 @@ tbody tr:last-child td {
 
 .ai-reply-preview strong {
   font-size: 13px;
+}
+
+.ai-row-detail {
+  margin-top: 10px;
+}
+
+.ai-row-detail summary,
+.ai-fold-panel summary {
+  cursor: pointer;
+  color: var(--brand-strong);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ai-row-detail summary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+.ai-detail-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
 }
 
 .ai-copilot-panel {
@@ -1193,6 +1288,79 @@ tbody tr:last-child td {
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 10px;
+}
+
+.ai-rule-list {
+  display: grid;
+  gap: 8px;
+}
+
+.ai-rule-item {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ai-rule-item:last-child {
+  border-bottom: 0;
+}
+
+.ai-rule-item p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.ai-fold-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.ai-fold-panel summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  list-style: none;
+}
+
+.ai-fold-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.ai-fold-panel summary small {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.ai-fold-panel summary em {
+  min-width: 26px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+  text-align: center;
+}
+
+.ai-fold-panel[open] summary {
+  border-bottom: 1px solid var(--line);
+  background: #fbfcfa;
+}
+
+.ai-fold-panel .knowledge-list,
+.ai-fold-panel .timeline {
+  padding: 12px;
 }
 
 .composer {
@@ -1776,6 +1944,7 @@ tbody tr:last-child td {
   .split-band,
   .player-layout,
   .ai-layout,
+  .ai-command-layout,
   .bonus-layout,
   .inbox-layout {
     grid-template-columns: 1fr;
@@ -1898,7 +2067,30 @@ tbody tr:last-child td {
   .queue-item,
   .case-card,
   .ai-layout,
+  .ai-command-layout,
+  .ai-queue-main,
   .timeline-event {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-triage-card {
+    padding: 12px;
+  }
+
+  .ai-queue-main {
+    align-items: stretch;
+  }
+
+  .ai-queue-main .profile-actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ai-queue-main .profile-actions button {
+    width: 100%;
+  }
+
+  .ai-rule-item {
     grid-template-columns: 1fr;
   }
 

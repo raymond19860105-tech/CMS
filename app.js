@@ -2318,7 +2318,10 @@ function blockedOfferReason(player) {
 }
 
 function renderAiDesk() {
-  const analyses = aiAnalyses();
+  const analyses = aiAnalyses().sort((a, b) => {
+    const weight = { high: 0, medium: 1, low: 2 };
+    return (weight[a.severity] ?? 3) - (weight[b.severity] ?? 3);
+  });
   const highRisk = analyses.filter((analysis) => analysis.severity === "high").length;
   const needsReview = analyses.filter((analysis) => !analysis.autoReplyAllowed).length;
   const autoAllowed = analyses.filter((analysis) => analysis.autoReplyAllowed).length;
@@ -2335,18 +2338,18 @@ function renderAiDesk() {
       </div>
 
       <div class="dashboard-grid">
-        ${metricCard("AI 待審", needsReview, "需真人 / 主管 / 合規確認", needsReview ? "down" : "flat")}
-        ${metricCard("高風險攔截", highRisk, "RG / AML / P0 / Abuse", highRisk ? "down" : "flat")}
-        ${metricCard("可自動回覆", autoAllowed, "低風險 FAQ 或一般服務", "up")}
-        ${metricCard("平均信心", `${avgConfidence}%`, "意圖分類 confidence", "flat")}
+        ${metricCard("待人工", needsReview, "需真人 / 審核 / 合規", needsReview ? "down" : "flat")}
+        ${metricCard("高風險", highRisk, "RG / AML / Abuse", highRisk ? "down" : "flat")}
+        ${metricCard("可自動", autoAllowed, "低風險一般服務", "up")}
+        ${metricCard("信心分數", `${avgConfidence}%`, "意圖分類平均值", "flat")}
       </div>
 
-      <div class="ai-layout">
-        <section class="panel">
+      <div class="ai-command-layout">
+        <section class="panel ai-main-panel">
           <div class="panel-header">
             <div>
               <p class="eyebrow">AI Triage Queue</p>
-              <h3>對話意圖與轉接判斷</h3>
+              <h3>需要處理的對話</h3>
             </div>
           </div>
           <div class="ai-triage-list">
@@ -2354,24 +2357,24 @@ function renderAiDesk() {
           </div>
         </section>
 
-        <aside class="section-stack">
+        <aside class="section-stack ai-side-rail">
           <section class="panel">
             <div class="panel-header">
               <div>
                 <p class="eyebrow">Guardrails</p>
-                <h3>AI 可做 / 不可做</h3>
+                <h3>決策規則</h3>
               </div>
             </div>
-            <div class="check-list">
+            <div class="ai-rule-list">
               ${[
-                ["自動回答", "一般 FAQ、流程說明、低風險狀態查詢。", "open"],
-                ["需人工審核", "優惠、補償、VIP 特例、Payment 進度。", "pending"],
-                ["禁止自動處理", "RG High、AML Watch、Bonus Abuse、出金承諾、風控細節。", "blocked"]
+                ["可自動", "一般 FAQ、流程說明、低風險狀態查詢。", "open"],
+                ["需審核", "優惠、補償、VIP 特例、Payment 進度。", "pending"],
+                ["需接管", "RG High、AML Watch、Bonus Abuse、出金承諾、風控細節。", "blocked"]
               ]
                 .map(
                   ([title, body, status]) => `
-                    <article class="check-item">
-                      <strong>${title}<span class="status ${status}">${status === "open" ? "允許" : status === "pending" ? "審核" : "阻擋"}</span></strong>
+                    <article class="ai-rule-item">
+                      <span class="status ${status}">${title}</span>
                       <p>${body}</p>
                     </article>
                   `
@@ -2380,31 +2383,33 @@ function renderAiDesk() {
             </div>
           </section>
 
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Knowledge Base</p>
-                <h3>核准知識來源</h3>
-              </div>
-            </div>
+          <details class="panel ai-fold-panel">
+            <summary>
+              <span>
+                <small>Knowledge Base</small>
+                <strong>核准知識來源</strong>
+              </span>
+              <em>${aiKnowledgeBase.length}</em>
+            </summary>
             <div class="knowledge-list">
               ${aiKnowledgeBase.map((item) => knowledgeCard(item)).join("")}
             </div>
-          </section>
+          </details>
 
-          <section class="panel">
-            <div class="panel-header">
-              <div>
-                <p class="eyebrow">Audit Trail</p>
-                <h3>AI 稽核紀錄</h3>
-              </div>
-            </div>
+          <details class="panel ai-fold-panel">
+            <summary>
+              <span>
+                <small>Audit Trail</small>
+                <strong>AI 稽核紀錄</strong>
+              </span>
+              <em>${aiAuditEvents.length}</em>
+            </summary>
             <div class="timeline">
               ${aiAuditEvents
                 .map((event) => timelineItem(`${event.id} · ${event.status}`, `${event.at} · ${event.conversationId} · ${event.action}`))
                 .join("")}
             </div>
-          </section>
+          </details>
         </aside>
       </div>
     </section>
@@ -2415,28 +2420,39 @@ function aiTriageCard(analysis) {
   const [label, status] = aiStatusLabel(analysis);
   return `
     <article class="ai-triage-card ${analysis.severity}">
-      <div class="list-card-title">
-        <div>
+      <div class="ai-queue-main">
+        <div class="ai-person-cell">
+          <strong>${analysis.player.name}</strong>
+          <p>${analysis.conversation.id} · ${analysis.conversation.channel} · VIP ${analysis.player.vipLevel}</p>
+        </div>
+        <div class="ai-intent-cell">
           <strong>${analysis.intent}</strong>
-          <p>${analysis.player.name} · ${analysis.conversation.id} · ${analysis.conversation.channel}</p>
+          <p>${analysis.confidence}% confidence · ${analysis.route}</p>
         </div>
         <span class="status ${status}">${label}</span>
+        <div class="profile-actions">
+          <button class="subtle-button" data-open-ai-conversation="${analysis.conversation.id}" type="button">開啟</button>
+          <button class="ghost-button" data-ai-apply-reply="${analysis.conversation.id}" type="button">套用</button>
+          <button class="ghost-button" data-ai-handoff="${analysis.conversation.id}" type="button">交接</button>
+        </div>
       </div>
-      <div class="ai-score-row">
-        <span class="severity ${analysis.severity}">Confidence ${analysis.confidence}%</span>
-        <span class="pill">Route ${analysis.route}</span>
-      </div>
-      <p>${analysis.summary[0]}</p>
-      ${analysis.blockers.length ? `<div class="tag-row">${analysis.blockers.map((item) => `<span class="tag risk">${item}</span>`).join("")}</div>` : ""}
-      <div class="ai-reply-preview">
-        <strong>建議回覆</strong>
-        <p>${analysis.suggestedReply}</p>
-      </div>
-      <div class="profile-actions">
-        <button class="subtle-button" data-open-ai-conversation="${analysis.conversation.id}" type="button">開啟對話</button>
-        <button class="ghost-button" data-ai-apply-reply="${analysis.conversation.id}" type="button">套用建議</button>
-        <button class="ghost-button" data-ai-handoff="${analysis.conversation.id}" type="button">轉真人摘要</button>
-      </div>
+      <details class="ai-row-detail">
+        <summary>查看摘要、阻擋與建議回覆</summary>
+        <div class="ai-detail-body">
+          <div class="ai-summary-list">
+            ${analysis.summary.map((item) => `<p>${item}</p>`).join("")}
+          </div>
+          ${
+            analysis.blockers.length
+              ? `<div class="tag-row">${analysis.blockers.map((item) => `<span class="tag risk">${item}</span>`).join("")}</div>`
+              : `<span class="tag ok">無硬性阻擋</span>`
+          }
+          <div class="ai-reply-preview">
+            <strong>建議回覆</strong>
+            <p>${analysis.suggestedReply}</p>
+          </div>
+        </div>
+      </details>
     </article>
   `;
 }
