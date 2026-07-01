@@ -207,6 +207,10 @@ button:disabled {
   scroll-margin-top: 86px;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .sidebar-footer {
   margin-top: auto;
   display: grid;
@@ -423,6 +427,47 @@ h4 {
 .section-stack {
   display: grid;
   gap: 18px;
+}
+
+.section-pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 2px 0 4px;
+}
+
+.section-tab {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 7px 11px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.section-tab:hover,
+.section-tab.active {
+  border-color: rgba(36, 113, 94, 0.38);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.section-page-mode .two-column,
+.section-page-mode .player-layout,
+.section-page-mode .inbox-layout,
+.section-page-mode .ai-command-layout,
+.section-page-mode .bonus-layout,
+.section-page-mode .settings-grid {
+  grid-template-columns: 1fr;
+}
+
+.section-page-mode .profile-pane {
+  position: static;
+  max-height: none;
+  overflow: visible;
 }
 
 .dashboard-grid {

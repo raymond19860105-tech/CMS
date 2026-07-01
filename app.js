@@ -1197,7 +1197,7 @@ let aiAuditEvents = [
 
 const state = {
   view: "dashboard",
-  activeSection: "",
+  activeSection: "dashboard-overview",
   locale: localeNames[savedLocale] ? savedLocale : "zh",
   activePlayerId: "P-88031",
   activeConversationId: "C-1008",
@@ -1628,6 +1628,8 @@ function renderNav() {
     rg: riskAlerts.filter((alert) => alert.type === "RG Risk").length
   };
 
+  const currentSection = normalizedSectionForView(state.view);
+
   navList.innerHTML = navItems
     .map((item) => {
       const active = state.view === item.id;
@@ -1638,7 +1640,7 @@ function renderNav() {
             ${item.sections
               .map(
                 (section) => `
-                  <button class="nav-sub-button ${active && state.activeSection === section.id ? "active" : ""}" data-view="${item.id}" data-section="${section.id}" type="button">
+                  <button class="nav-sub-button ${active && currentSection === section.id ? "active" : ""}" data-view="${item.id}" data-section="${section.id}" type="button">
                     <span>${escapeHtml(section.label)}</span>
                   </button>
                 `
@@ -1662,17 +1664,38 @@ function renderNav() {
     .join("");
 }
 
+function navItemById(view) {
+  return navItems.find((item) => item.id === view) || navItems[0];
+}
+
+function defaultSectionForView(view) {
+  return navItemById(view)?.sections?.[0]?.id || "";
+}
+
+function normalizedSectionForView(view, section = state.activeSection) {
+  const item = navItemById(view);
+  if (!item?.sections?.length) return "";
+  return item.sections.some((subItem) => subItem.id === section) ? section : item.sections[0].id;
+}
+
+function sectionLabelForView(view, section = state.activeSection) {
+  const item = navItemById(view);
+  return item?.sections?.find((subItem) => subItem.id === section)?.label || "";
+}
+
 function setView(view, section = "") {
   state.view = view;
-  state.activeSection = section;
+  state.activeSection = normalizedSectionForView(view, section || defaultSectionForView(view));
   render();
   app.focus({ preventScroll: true });
 }
 
 function render() {
+  state.activeSection = normalizedSectionForView(state.view);
   renderNav();
   const [eyebrow, title] = titles[state.view] || titles.dashboard;
-  viewEyebrow.textContent = eyebrow;
+  const activeSectionLabel = sectionLabelForView(state.view);
+  viewEyebrow.textContent = activeSectionLabel ? `${eyebrow} / ${activeSectionLabel}` : eyebrow;
   viewTitle.textContent = title;
 
   const viewRenderer = {
@@ -1689,9 +1712,46 @@ function render() {
     settings: renderSettings
   }[state.view];
 
-  app.innerHTML = viewRenderer ? viewRenderer() : renderDashboard();
+  app.innerHTML = `${renderSectionPager()}${viewRenderer ? viewRenderer() : renderDashboard()}`;
+  applySectionPaging();
   hydrateView();
   applyLocale(document.body);
+}
+
+function renderSectionPager() {
+  const item = navItemById(state.view);
+  if (!item?.sections?.length) return "";
+
+  return `
+    <nav class="section-pager" aria-label="${escapeHtml(item.label)} 功能分頁">
+      ${item.sections
+        .map(
+          (section) => `
+            <button class="section-tab ${state.activeSection === section.id ? "active" : ""}" data-view="${item.id}" data-section="${section.id}" type="button">
+              ${escapeHtml(section.label)}
+            </button>
+          `
+        )
+        .join("")}
+    </nav>
+  `;
+}
+
+function applySectionPaging() {
+  const activeSection = normalizedSectionForView(state.view);
+  app.classList.toggle("section-page-mode", Boolean(activeSection));
+
+  const sectionElements = [...app.querySelectorAll("[data-section]")].filter((element) => element.tagName !== "BUTTON");
+  sectionElements.forEach((element) => {
+    const active = element.dataset.section === activeSection;
+    element.hidden = !active;
+    element.classList.toggle("active-section", active);
+  });
+
+  [...app.querySelectorAll("[data-section-container]")].forEach((container) => {
+    const hasVisibleSection = [...container.querySelectorAll("[data-section]")].some((element) => !element.hidden);
+    container.hidden = !hasVisibleSection;
+  });
 }
 
 function filteredPlayers() {
@@ -1998,10 +2058,10 @@ function renderPlayers() {
       </div>
 
       <div class="player-layout">
-        <section class="player-list-grid" aria-label="VIP 玩家列表">
+        <section class="player-list-grid" data-section="players-list" aria-label="VIP 玩家列表">
           ${list.length ? list.map((player) => playerListCard(player)).join("") : `<div class="empty-state">找不到符合條件的 VIP 玩家</div>`}
         </section>
-        <aside class="profile-pane" data-section="players-profile">
+        <aside class="profile-pane" data-section-container>
           ${renderProfile(activePlayer)}
         </aside>
       </div>
@@ -2034,91 +2094,93 @@ function playerListCard(player) {
 
 function renderProfile(player) {
   return `
-    <section class="profile-hero">
-      <div class="profile-head">
-        <div class="profile-name-row">
-          <div>
-            <p class="eyebrow">${player.id} · ${player.username}</p>
-            <h2>${player.name}</h2>
-            <div class="profile-actions">
-              <span class="pill ${vipClass(player.vipLevel)}">VIP ${player.vipLevel}</span>
-              <span class="severity ${riskClass(player.riskLevel)}">Risk ${player.riskLevel}</span>
-              <span class="severity ${riskClass(player.rgRisk)}">RG ${player.rgRisk}</span>
+    <section class="profile-hero" data-section-container>
+      <div data-section="players-profile">
+        <div class="profile-head">
+          <div class="profile-name-row">
+            <div>
+              <p class="eyebrow">${player.id} · ${player.username}</p>
+              <h2>${player.name}</h2>
+              <div class="profile-actions">
+                <span class="pill ${vipClass(player.vipLevel)}">VIP ${player.vipLevel}</span>
+                <span class="severity ${riskClass(player.riskLevel)}">Risk ${player.riskLevel}</span>
+                <span class="severity ${riskClass(player.rgRisk)}">RG ${player.rgRisk}</span>
+              </div>
             </div>
+            <span class="status ${player.status.includes("限制") ? "blocked" : "open"}">${player.status}</span>
           </div>
-          <span class="status ${player.status.includes("限制") ? "blocked" : "open"}">${player.status}</span>
+          <div class="profile-actions">
+            <button class="tool-button" data-send-message="${player.id}" type="button">Send Message</button>
+            <button class="tool-button" data-action="create-ticket" data-player="${player.id}" type="button">Create Ticket</button>
+            <button class="tool-button" data-action="add-note" data-player="${player.id}" type="button">Add Note</button>
+            <button class="tool-button" data-issue-bonus="${player.id}" type="button">Issue Bonus</button>
+            <button class="tool-button" data-action="risk-escalate" data-player="${player.id}" type="button">Escalate Risk</button>
+            <button class="tool-button" data-action="rg-action" data-player="${player.id}" type="button">RG Action</button>
+          </div>
         </div>
-        <div class="profile-actions">
-          <button class="tool-button" data-send-message="${player.id}" type="button">Send Message</button>
-          <button class="tool-button" data-action="create-ticket" data-player="${player.id}" type="button">Create Ticket</button>
-          <button class="tool-button" data-action="add-note" data-player="${player.id}" type="button">Add Note</button>
-          <button class="tool-button" data-issue-bonus="${player.id}" type="button">Issue Bonus</button>
-          <button class="tool-button" data-action="risk-escalate" data-player="${player.id}" type="button">Escalate Risk</button>
-          <button class="tool-button" data-action="rg-action" data-player="${player.id}" type="button">RG Action</button>
-        </div>
-      </div>
 
-      <div class="summary-grid">
-        ${summaryCell("Assigned Agent", player.agent)}
-        ${summaryCell("KYC / Currency", `${player.kyc} · ${player.currency}`)}
-        ${summaryCell("Last Login", player.lastLogin)}
-        ${summaryCell("Last Deposit", player.lastDeposit)}
-        ${summaryCell("Last Bet", player.lastBet)}
-        ${summaryCell("Last Contact", player.lastContact)}
-      </div>
-
-      <div class="profile-section">
-        <h3>Value Snapshot</h3>
         <div class="summary-grid">
-          ${summaryCell("Total Deposit", formatMoney(player.metrics.totalDeposit))}
-          ${summaryCell("Total Withdrawal", formatMoney(player.metrics.totalWithdrawal))}
-          ${summaryCell("Net Deposit", formatMoney(player.metrics.netDeposit))}
-          ${summaryCell("Monthly GGR", formatMoney(player.metrics.ggr))}
-          ${summaryCell("Bonus Cost", formatMoney(player.metrics.bonusCost))}
-          ${summaryCell("LTV", formatMoney(player.metrics.ltv))}
+          ${summaryCell("Assigned Agent", player.agent)}
+          ${summaryCell("KYC / Currency", `${player.kyc} · ${player.currency}`)}
+          ${summaryCell("Last Login", player.lastLogin)}
+          ${summaryCell("Last Deposit", player.lastDeposit)}
+          ${summaryCell("Last Bet", player.lastBet)}
+          ${summaryCell("Last Contact", player.lastContact)}
         </div>
-      </div>
 
-      <div class="profile-section">
-        <h3>30 Days Trend</h3>
-        ${lineChart(player.trend, player.wagerTrend)}
-        <div class="chart-legend">
-          <span class="legend-item"><span class="legend-swatch" style="background:#24715e"></span>Deposit</span>
-          <span class="legend-item"><span class="legend-swatch" style="background:#a26e1b"></span>Turnover</span>
+        <div class="profile-section">
+          <h3>Value Snapshot</h3>
+          <div class="summary-grid">
+            ${summaryCell("Total Deposit", formatMoney(player.metrics.totalDeposit))}
+            ${summaryCell("Total Withdrawal", formatMoney(player.metrics.totalWithdrawal))}
+            ${summaryCell("Net Deposit", formatMoney(player.metrics.netDeposit))}
+            ${summaryCell("Monthly GGR", formatMoney(player.metrics.ggr))}
+            ${summaryCell("Bonus Cost", formatMoney(player.metrics.bonusCost))}
+            ${summaryCell("LTV", formatMoney(player.metrics.ltv))}
+          </div>
         </div>
-      </div>
 
-      <div class="profile-section">
-        <h3>Active Time Heatmap</h3>
-        <div class="heatmap">
-          ${player.heat.map((level) => `<span class="heat-cell level-${level}" title="Activity ${level}"></span>`).join("")}
+        <div class="profile-section">
+          <h3>30 Days Trend</h3>
+          ${lineChart(player.trend, player.wagerTrend)}
+          <div class="chart-legend">
+            <span class="legend-item"><span class="legend-swatch" style="background:#24715e"></span>Deposit</span>
+            <span class="legend-item"><span class="legend-swatch" style="background:#a26e1b"></span>Turnover</span>
+          </div>
         </div>
-      </div>
 
-      <div class="profile-section">
-        <h3>Relationship & Behavior</h3>
-        <div class="task-list">
-          ${infoLine("偏好聯絡", `${player.preferredContact} · ${player.tone}`)}
-          ${infoLine("常玩遊戲", player.behavior.games.join(" / "))}
-          ${infoLine("投注習慣", `${player.behavior.bettingTime} · ${player.behavior.session}`)}
-          ${infoLine("入出金模式", `${player.behavior.depositPattern}；${player.behavior.withdrawalPattern}`)}
-          ${infoLine("重要備註", player.notes)}
+        <div class="profile-section">
+          <h3>Active Time Heatmap</h3>
+          <div class="heatmap">
+            ${player.heat.map((level) => `<span class="heat-cell level-${level}" title="Activity ${level}"></span>`).join("")}
+          </div>
         </div>
-      </div>
 
-      <div class="profile-section">
-        <h3>客服可見操作指引</h3>
-        <div class="check-list">
-          ${guardrail(player)}
+        <div class="profile-section">
+          <h3>Relationship & Behavior</h3>
+          <div class="task-list">
+            ${infoLine("偏好聯絡", `${player.preferredContact} · ${player.tone}`)}
+            ${infoLine("常玩遊戲", player.behavior.games.join(" / "))}
+            ${infoLine("投注習慣", `${player.behavior.bettingTime} · ${player.behavior.session}`)}
+            ${infoLine("入出金模式", `${player.behavior.depositPattern}；${player.behavior.withdrawalPattern}`)}
+            ${infoLine("重要備註", player.notes)}
+          </div>
         </div>
-      </div>
 
-      <div class="profile-section">
-        <div class="section-title-row">
-          <h3>玩家事件時間軸</h3>
-          <span class="pill">${playerTimeline(player.id).length} events</span>
+        <div class="profile-section">
+          <h3>客服可見操作指引</h3>
+          <div class="check-list">
+            ${guardrail(player)}
+          </div>
         </div>
-        ${renderPlayerTimeline(player.id)}
+
+        <div class="profile-section">
+          <div class="section-title-row">
+            <h3>玩家事件時間軸</h3>
+            <span class="pill">${playerTimeline(player.id).length} events</span>
+          </div>
+          ${renderPlayerTimeline(player.id)}
+        </div>
       </div>
 
       <div class="profile-section" data-section="players-work">
@@ -2460,7 +2522,7 @@ function renderAiDesk() {
         <button class="primary-button" data-action="ai-run-triage" type="button">重新執行分流</button>
       </div>
 
-      <div class="dashboard-grid">
+      <div class="dashboard-grid" data-section="ai-triage">
         ${metricCard("待人工", needsReview, "需真人 / 審核 / 合規", needsReview ? "down" : "flat")}
         ${metricCard("高風險", highRisk, "RG / AML / Abuse", highRisk ? "down" : "flat")}
         ${metricCard("可自動", autoAllowed, "低風險一般服務", "up")}
@@ -2480,7 +2542,7 @@ function renderAiDesk() {
           </div>
         </section>
 
-        <aside class="section-stack ai-side-rail">
+        <aside class="section-stack ai-side-rail" data-section-container>
           <section class="panel" data-section="ai-rules">
             <div class="panel-header">
               <div>
@@ -2778,7 +2840,7 @@ function renderBonus() {
         </div>
       </section>
 
-      <aside class="section-stack">
+      <aside class="section-stack" data-section-container>
         <section class="panel" data-section="bonus-checks">
           <div class="panel-header">
             <div>
@@ -3435,8 +3497,7 @@ function hydrateView() {
   }
   if (state.activeSection) {
     window.requestAnimationFrame(() => {
-      const target = document.querySelector(`[data-section="${state.activeSection}"]`);
-      if (target) target.scrollIntoView({ block: "start", behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
 }
@@ -3834,21 +3895,21 @@ document.addEventListener("click", (event) => {
   const profileButton = event.target.closest("[data-open-profile]");
   if (profileButton) {
     state.activePlayerId = profileButton.dataset.openProfile;
-    setView("players");
+    setView("players", "players-profile");
     return;
   }
 
   const selectPlayer = event.target.closest("[data-select-player]");
   if (selectPlayer) {
     state.activePlayerId = selectPlayer.dataset.selectPlayer;
-    render();
+    setView("players", "players-profile");
     return;
   }
 
   const conversationButton = event.target.closest("[data-conversation]");
   if (conversationButton) {
     state.activeConversationId = conversationButton.dataset.conversation;
-    render();
+    setView("inbox", "inbox-chat");
     return;
   }
 
@@ -3868,14 +3929,14 @@ document.addEventListener("click", (event) => {
     const conversation = conversationsForPlayer(sendButton.dataset.sendMessage);
     state.activePlayerId = sendButton.dataset.sendMessage;
     if (conversation) state.activeConversationId = conversation.id;
-    setView("inbox");
+    setView("inbox", "inbox-chat");
     return;
   }
 
   const issueBonusButton = event.target.closest("[data-issue-bonus]");
   if (issueBonusButton) {
     state.bonusDraft.playerId = issueBonusButton.dataset.issueBonus;
-    setView("bonus");
+    setView("bonus", "bonus-request");
     return;
   }
 
@@ -3886,7 +3947,7 @@ document.addEventListener("click", (event) => {
       state.activeConversationId = conversation.id;
       state.activePlayerId = conversation.playerId;
       closeModal();
-      setView("inbox");
+      setView("inbox", "inbox-chat");
     }
     return;
   }
@@ -3898,8 +3959,8 @@ document.addEventListener("click", (event) => {
       const analysis = aiAnalyzeConversation(conversation);
       state.activeConversationId = conversation.id;
       state.activePlayerId = conversation.playerId;
-      if (state.view !== "inbox") {
-        setView("inbox");
+      if (state.view !== "inbox" || state.activeSection !== "inbox-chat") {
+        setView("inbox", "inbox-chat");
       }
       const input = document.querySelector("#messageInput");
       if (input) {
