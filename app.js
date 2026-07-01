@@ -1,15 +1,115 @@
 const navItems = [
-  { id: "dashboard", label: "儀表板", icon: "DB" },
-  { id: "players", label: "VIP 玩家", icon: "P" },
-  { id: "inbox", label: "收件匣", icon: "IN" },
-  { id: "ai", label: "AI 客服", icon: "AI" },
-  { id: "tickets", label: "工單", icon: "T" },
-  { id: "bonus", label: "優惠", icon: "B" },
-  { id: "tasks", label: "任務", icon: "TS" },
-  { id: "risk", label: "風控中心", icon: "R" },
-  { id: "rg", label: "責任博彩", icon: "RG" },
-  { id: "reports", label: "報表", icon: "RP" },
-  { id: "settings", label: "設定", icon: "S" }
+  {
+    id: "dashboard",
+    label: "儀表板",
+    icon: "DB",
+    sections: [
+      { id: "dashboard-overview", label: "關鍵指標" },
+      { id: "dashboard-routing", label: "分派與人力" },
+      { id: "dashboard-queue", label: "今日待辦" },
+      { id: "dashboard-portfolio", label: "玩家與對話" }
+    ]
+  },
+  {
+    id: "players",
+    label: "VIP 玩家",
+    icon: "P",
+    sections: [
+      { id: "players-list", label: "玩家列表" },
+      { id: "players-profile", label: "360 主檔" },
+      { id: "players-work", label: "關聯工作" }
+    ]
+  },
+  {
+    id: "inbox",
+    label: "收件匣",
+    icon: "IN",
+    sections: [
+      { id: "inbox-queue", label: "待回覆佇列" },
+      { id: "inbox-chat", label: "對話處理" },
+      { id: "inbox-context", label: "玩家與話術" }
+    ]
+  },
+  {
+    id: "ai",
+    label: "AI 客服",
+    icon: "AI",
+    sections: [
+      { id: "ai-triage", label: "AI 分流" },
+      { id: "ai-rules", label: "決策規則" },
+      { id: "ai-audit", label: "知識與稽核" }
+    ]
+  },
+  {
+    id: "tickets",
+    label: "工單",
+    icon: "T",
+    sections: [
+      { id: "tickets-metrics", label: "SLA 指標" },
+      { id: "tickets-board", label: "看板流程" },
+      { id: "tickets-list", label: "案件列表" }
+    ]
+  },
+  {
+    id: "bonus",
+    label: "優惠",
+    icon: "B",
+    sections: [
+      { id: "bonus-request", label: "申請表" },
+      { id: "bonus-checks", label: "發放檢查" },
+      { id: "bonus-approvals", label: "待審批" }
+    ]
+  },
+  {
+    id: "tasks",
+    label: "任務",
+    icon: "TS",
+    sections: [
+      { id: "tasks-queue", label: "任務佇列" },
+      { id: "tasks-rules", label: "自動規則" }
+    ]
+  },
+  {
+    id: "risk",
+    label: "風控中心",
+    icon: "R",
+    sections: [
+      { id: "risk-alerts", label: "風險警示" },
+      { id: "risk-instructions", label: "客服指引" }
+    ]
+  },
+  {
+    id: "rg",
+    label: "責任博彩",
+    icon: "RG",
+    sections: [
+      { id: "rg-metrics", label: "RG 指標" },
+      { id: "rg-watchlist", label: "觀察名單" },
+      { id: "rg-controls", label: "限制引導" },
+      { id: "rg-cases", label: "Case 流程" }
+    ]
+  },
+  {
+    id: "reports",
+    label: "報表",
+    icon: "RP",
+    sections: [
+      { id: "reports-metrics", label: "總覽指標" },
+      { id: "reports-executive", label: "主管摘要" },
+      { id: "reports-guide", label: "閱讀說明" },
+      { id: "reports-cards", label: "報表卡片" }
+    ]
+  },
+  {
+    id: "settings",
+    label: "設定",
+    icon: "S",
+    sections: [
+      { id: "settings-vip", label: "VIP 規則" },
+      { id: "settings-sla", label: "SLA 規則" },
+      { id: "settings-templates", label: "話術權限" }
+    ]
+  }
 ];
 
 const localeNames = {
@@ -1097,6 +1197,7 @@ let aiAuditEvents = [
 
 const state = {
   view: "dashboard",
+  activeSection: "",
   locale: localeNames[savedLocale] ? savedLocale : "zh",
   activePlayerId: "P-88031",
   activeConversationId: "C-1008",
@@ -1528,20 +1629,42 @@ function renderNav() {
   };
 
   navList.innerHTML = navItems
-    .map(
-      (item) => `
-        <button class="nav-button ${state.view === item.id ? "active" : ""}" data-view="${item.id}" type="button">
-          <span class="nav-icon">${item.icon}</span>
-          <span>${item.label}</span>
-          ${counts[item.id] ? `<span class="nav-count">${counts[item.id]}</span>` : ""}
-        </button>
-      `
-    )
+    .map((item) => {
+      const active = state.view === item.id;
+      const badge = counts[item.id] || item.sections?.length || "";
+      const subItems = item.sections?.length
+        ? `
+          <div class="nav-sub-list" aria-label="${escapeHtml(item.label)} 子功能">
+            ${item.sections
+              .map(
+                (section) => `
+                  <button class="nav-sub-button ${active && state.activeSection === section.id ? "active" : ""}" data-view="${item.id}" data-section="${section.id}" type="button">
+                    <span>${escapeHtml(section.label)}</span>
+                  </button>
+                `
+              )
+              .join("")}
+          </div>
+        `
+        : "";
+
+      return `
+        <div class="nav-group ${active ? "active" : ""}">
+          <button class="nav-button ${active ? "active" : ""}" data-view="${item.id}" type="button" aria-expanded="${active ? "true" : "false"}">
+            <span class="nav-icon">${escapeHtml(item.icon)}</span>
+            <span>${escapeHtml(item.label)}</span>
+            ${badge ? `<span class="nav-count">${badge}</span>` : ""}
+          </button>
+          ${subItems}
+        </div>
+      `;
+    })
     .join("");
 }
 
-function setView(view) {
+function setView(view, section = "") {
   state.view = view;
+  state.activeSection = section;
   render();
   app.focus({ preventScroll: true });
 }
@@ -1603,19 +1726,19 @@ function renderDashboard() {
 
   return `
     <section class="section-stack">
-      <div class="dashboard-grid">
+      <div class="dashboard-grid" data-section="dashboard-overview">
         ${metricCard("Active VIP Today", activeVip, "5 位重點玩家在線", "up")}
         ${metricCard("VIP Deposit Today", formatMoney(depositToday), "高額入金需 30 分鐘內關懷", "up")}
         ${metricCard("VIP Withdrawal Today", formatMoney(withdrawalToday), "2 筆出金接近 SLA", "down")}
         ${metricCard("Open Tickets / RG", `${openTickets} / ${rgAlerts}`, "P0 需立即升級", "flat")}
       </div>
 
-      <div class="two-column">
+      <div class="two-column" data-section="dashboard-routing">
         ${renderRoutingPanel()}
         ${renderAgentCapacityPanel()}
       </div>
 
-      <div class="two-column">
+      <div class="two-column" data-section="dashboard-queue">
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -1643,7 +1766,7 @@ function renderDashboard() {
         </section>
       </div>
 
-      <div class="split-band">
+      <div class="split-band" data-section="dashboard-portfolio">
         <section class="table-panel">
           <div class="table-header">
             <div>
@@ -1855,7 +1978,7 @@ function renderPlayers() {
         <button class="primary-button" data-action="create-ticket" data-player="${activePlayer.id}" type="button">新增工單</button>
       </div>
 
-      <div class="filter-bar">
+      <div class="filter-bar" data-section="players-list">
         <label class="field">
           <span>搜尋玩家</span>
           <input id="playerSearch" type="search" value="${escapeHtml(state.playerFilters.search)}" placeholder="Player ID、帳號、標籤" />
@@ -1878,7 +2001,7 @@ function renderPlayers() {
         <section class="player-list-grid" aria-label="VIP 玩家列表">
           ${list.length ? list.map((player) => playerListCard(player)).join("") : `<div class="empty-state">找不到符合條件的 VIP 玩家</div>`}
         </section>
-        <aside class="profile-pane">
+        <aside class="profile-pane" data-section="players-profile">
           ${renderProfile(activePlayer)}
         </aside>
       </div>
@@ -1998,7 +2121,7 @@ function renderProfile(player) {
         ${renderPlayerTimeline(player.id)}
       </div>
 
-      <div class="profile-section">
+      <div class="profile-section" data-section="players-work">
         <h3>關聯工作項目</h3>
         ${renderLinkedWorkItems(player.id)}
       </div>
@@ -2170,7 +2293,7 @@ function renderInbox() {
 
   return `
     <section class="inbox-layout">
-      <aside class="conversation-list">
+      <aside class="conversation-list" data-section="inbox-queue">
         <div class="panel-header">
           <div>
             <p class="eyebrow">Waiting Queue</p>
@@ -2180,7 +2303,7 @@ function renderInbox() {
         ${conversations.map((item) => conversationButton(item)).join("")}
       </aside>
 
-      <section class="chat-panel">
+      <section class="chat-panel" data-section="inbox-chat">
         <header class="conversation-header">
           <div>
             <p class="eyebrow">${conversation.channel} · ${conversation.priority}</p>
@@ -2203,7 +2326,7 @@ function renderInbox() {
         </form>
       </section>
 
-      <aside class="context-panel">
+      <aside class="context-panel" data-section="inbox-context">
         ${renderAiCopilot(ai)}
 
         <section class="panel">
@@ -2345,7 +2468,7 @@ function renderAiDesk() {
       </div>
 
       <div class="ai-command-layout">
-        <section class="panel ai-main-panel">
+        <section class="panel ai-main-panel" data-section="ai-triage">
           <div class="panel-header">
             <div>
               <p class="eyebrow">AI Triage Queue</p>
@@ -2358,7 +2481,7 @@ function renderAiDesk() {
         </section>
 
         <aside class="section-stack ai-side-rail">
-          <section class="panel">
+          <section class="panel" data-section="ai-rules">
             <div class="panel-header">
               <div>
                 <p class="eyebrow">Guardrails</p>
@@ -2383,7 +2506,7 @@ function renderAiDesk() {
             </div>
           </section>
 
-          <details class="panel ai-fold-panel">
+          <details class="panel ai-fold-panel" data-section="ai-audit">
             <summary>
               <span>
                 <small>Knowledge Base</small>
@@ -2488,21 +2611,21 @@ function renderTickets() {
         <button class="primary-button" data-action="create-ticket" data-player="${state.activePlayerId}" type="button">新增工單</button>
       </div>
 
-      <div class="dashboard-grid">
+      <div class="dashboard-grid" data-section="tickets-metrics">
         ${metricCard("Open Tickets", openCount, "未結案件需 owner 與下一步", "flat")}
         ${metricCard("Due Soon", dueCount, "SLA 低於 45 分鐘", "down")}
         ${metricCard("Breached", breachedCount, "需主管補紀錄", "down")}
         ${metricCard("In Review", escalatedCount, "Payment / Risk / Compliance", "flat")}
       </div>
 
-      <section class="ticket-board">
+      <section class="ticket-board" data-section="tickets-board">
         ${ticketColumn("Open", tickets.filter((ticket) => ticket.status === "Open"))}
         ${ticketColumn("Review", tickets.filter((ticket) => /Review/i.test(ticket.status)))}
         ${ticketColumn("Escalated", tickets.filter((ticket) => ticket.status === "Escalated"))}
         ${ticketColumn("Resolved", tickets.filter((ticket) => /Resolved|Closed/i.test(ticket.status)))}
       </section>
 
-      <section class="table-panel">
+      <section class="table-panel" data-section="tickets-list">
         <div class="table-header">
           <div>
             <p class="eyebrow">SLA Queue</p>
@@ -2600,7 +2723,7 @@ function renderBonus() {
 
   return `
     <section class="bonus-layout">
-      <section class="panel">
+      <section class="panel" data-section="bonus-request">
         <div class="panel-header">
           <div>
             <p class="eyebrow">Issue Bonus</p>
@@ -2656,7 +2779,7 @@ function renderBonus() {
       </section>
 
       <aside class="section-stack">
-        <section class="panel">
+        <section class="panel" data-section="bonus-checks">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Pre-issue Checks</p>
@@ -2677,7 +2800,7 @@ function renderBonus() {
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-section="bonus-approvals">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Approval Queue</p>
@@ -2785,7 +2908,7 @@ function renderTasks() {
       </div>
 
       <div class="two-column">
-        <section class="panel">
+        <section class="panel" data-section="tasks-queue">
           <div class="panel-header">
             <div>
               <p class="eyebrow">My Queue</p>
@@ -2797,7 +2920,7 @@ function renderTasks() {
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-section="tasks-rules">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Automation Rules</p>
@@ -2836,7 +2959,7 @@ function renderRisk() {
         <button class="primary-button" data-action="risk-escalate" data-player="${state.activePlayerId}" type="button">新增 Risk Alert</button>
       </div>
 
-      <div class="risk-grid">
+      <div class="risk-grid" data-section="risk-alerts">
         ${riskAlerts
           .map((alert) => {
             const player = playerById(alert.playerId);
@@ -2861,7 +2984,7 @@ function renderRisk() {
           .join("")}
       </div>
 
-      <section class="table-panel">
+      <section class="table-panel" data-section="risk-instructions">
         <div class="table-header">
           <div>
             <p class="eyebrow">Collaboration Flow</p>
@@ -2907,7 +3030,7 @@ function renderResponsibleGaming() {
         <button class="primary-button" data-action="rg-action" data-player="${state.activePlayerId}" type="button">套用 RG Action</button>
       </div>
 
-      <div class="dashboard-grid">
+      <div class="dashboard-grid" data-section="rg-metrics">
         ${metricCard("RG Alerts", riskAlerts.filter((alert) => alert.type === "RG Risk").length, "High risk requires immediate escalation", "down")}
         ${metricCard("Promo Blocked", 7, "促銷訊息自動停止", "flat")}
         ${metricCard("高風險 Case", highScoreCases, "Score 80+ 需 Compliance", "down")}
@@ -2915,7 +3038,7 @@ function renderResponsibleGaming() {
       </div>
 
       <div class="two-column">
-        <section class="panel">
+        <section class="panel" data-section="rg-watchlist">
           <div class="panel-header">
             <div>
               <p class="eyebrow">RG Watchlist</p>
@@ -2950,7 +3073,7 @@ function renderResponsibleGaming() {
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-section="rg-controls">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Allowed Actions</p>
@@ -2978,7 +3101,7 @@ function renderResponsibleGaming() {
         </section>
       </div>
 
-      <section class="panel">
+      <section class="panel" data-section="rg-cases">
         <div class="panel-header">
           <div>
             <p class="eyebrow">Case Workflow</p>
@@ -3116,14 +3239,14 @@ function renderReports() {
         </div>
       </div>
 
-      <div class="dashboard-grid">
+      <div class="dashboard-grid" data-section="reports-metrics">
         ${metricCard("本月 NGR", formatMoney(totalNgr), "扣除玩家輸贏與成本後的管理視角", "up")}
         ${metricCard("優惠成本率", `${bonusCostRatio}%`, "超過 60% 需 Manager 理由", bonusCostRatio >= 60 ? "down" : "flat")}
         ${metricCard("SLA 風險", slaRisk, "due / breached 工單", slaRisk ? "down" : "flat")}
         ${metricCard("高風險 VIP", highRiskVip, "Risk High 或 RG High", highRiskVip ? "down" : "flat")}
       </div>
 
-      <div class="two-column">
+      <div class="two-column" data-section="reports-executive">
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -3154,7 +3277,7 @@ function renderReports() {
         </section>
       </div>
 
-      <section class="table-panel">
+      <section class="table-panel" data-section="reports-guide">
         <div class="table-header">
           <div>
             <p class="eyebrow">How To Read</p>
@@ -3189,7 +3312,7 @@ function renderReports() {
         </div>
       </section>
 
-      <div class="report-grid">
+      <div class="report-grid" data-section="reports-cards">
         ${reportRows.map((row) => reportTile(row)).join("")}
       </div>
     </section>
@@ -3247,7 +3370,7 @@ function renderSettings() {
       </div>
 
       <div class="settings-grid">
-        <section class="panel">
+        <section class="panel" data-section="settings-vip">
           <div class="panel-header">
             <div>
               <p class="eyebrow">VIP Level Rules</p>
@@ -3261,7 +3384,7 @@ function renderSettings() {
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-section="settings-sla">
           <div class="panel-header">
             <div>
               <p class="eyebrow">SLA Rules</p>
@@ -3275,7 +3398,7 @@ function renderSettings() {
           </div>
         </section>
 
-        <section class="panel">
+        <section class="panel" data-section="settings-templates">
           <div class="panel-header">
             <div>
               <p class="eyebrow">Template Control</p>
@@ -3309,6 +3432,12 @@ function hydrateView() {
   if (state.view === "inbox") {
     const messages = document.querySelector("#messages");
     if (messages) messages.scrollTop = messages.scrollHeight;
+  }
+  if (state.activeSection) {
+    window.requestAnimationFrame(() => {
+      const target = document.querySelector(`[data-section="${state.activeSection}"]`);
+      if (target) target.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
   }
 }
 
@@ -3698,7 +3827,7 @@ function sendMessage(body) {
 document.addEventListener("click", (event) => {
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) {
-    setView(viewButton.dataset.view);
+    setView(viewButton.dataset.view, viewButton.dataset.section || "");
     return;
   }
 

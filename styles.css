@@ -120,6 +120,11 @@ button:disabled {
   gap: 4px;
 }
 
+.nav-group {
+  display: grid;
+  gap: 2px;
+}
+
 .nav-button {
   width: 100%;
   min-height: 42px;
@@ -162,6 +167,50 @@ button:disabled {
   color: rgba(255, 255, 255, 0.88);
   font-size: 12px;
   text-align: center;
+}
+
+.nav-sub-list {
+  display: none;
+  gap: 2px;
+  padding: 2px 0 8px 36px;
+}
+
+.nav-group.active .nav-sub-list,
+.nav-group:hover .nav-sub-list,
+.nav-group:focus-within .nav-sub-list {
+  display: grid;
+}
+
+.nav-sub-button {
+  min-height: 30px;
+  width: 100%;
+  border: 0;
+  border-left: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 6px 8px 6px 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+.nav-sub-button span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-sub-button:hover,
+.nav-sub-button.active {
+  border-left-color: #f2c66d;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+[data-section] {
+  scroll-margin-top: 86px;
 }
 
 .sidebar-footer {
@@ -1892,6 +1941,12 @@ tbody tr:last-child td {
     justify-items: center;
   }
 
+  .nav-group.active .nav-sub-list,
+  .nav-group:hover .nav-sub-list,
+  .nav-group:focus-within .nav-sub-list {
+    display: none;
+  }
+
   .sidebar:hover .brand-block,
   .sidebar:focus-within .brand-block {
     grid-template-columns: 44px minmax(0, 1fr);
@@ -1910,6 +1965,13 @@ tbody tr:last-child td {
   .sidebar:focus-within .nav-button {
     grid-template-columns: 26px minmax(0, 1fr) auto;
     justify-items: stretch;
+  }
+
+  .sidebar:hover .nav-group.active .nav-sub-list,
+  .sidebar:focus-within .nav-group.active .nav-sub-list,
+  .sidebar:hover .nav-group:hover .nav-sub-list,
+  .sidebar:focus-within .nav-group:focus-within .nav-sub-list {
+    display: grid;
   }
 
   .nav-count {
@@ -1989,6 +2051,18 @@ tbody tr:last-child td {
     grid-auto-columns: minmax(74px, 1fr);
     overflow-x: auto;
     padding-bottom: 3px;
+  }
+
+  .nav-group {
+    min-width: 74px;
+  }
+
+  .nav-group.active .nav-sub-list,
+  .nav-group:hover .nav-sub-list,
+  .nav-group:focus-within .nav-sub-list,
+  .sidebar:hover .nav-group.active .nav-sub-list,
+  .sidebar:focus-within .nav-group.active .nav-sub-list {
+    display: none;
   }
 
   .nav-button {
