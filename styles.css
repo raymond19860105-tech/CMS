@@ -170,19 +170,13 @@ button:disabled {
 }
 
 .nav-sub-list {
-  display: none;
+  display: grid;
   gap: 2px;
   padding: 2px 0 8px 36px;
 }
 
-.nav-group.active .nav-sub-list,
-.nav-group:hover .nav-sub-list,
-.nav-group:focus-within .nav-sub-list {
-  display: grid;
-}
-
 .nav-sub-button {
-  min-height: 30px;
+  min-height: 28px;
   width: 100%;
   border: 0;
   border-left: 2px solid rgba(255, 255, 255, 0.12);
@@ -1941,6 +1935,7 @@ tbody tr:last-child td {
     justify-items: center;
   }
 
+  .nav-sub-list,
   .nav-group.active .nav-sub-list,
   .nav-group:hover .nav-sub-list,
   .nav-group:focus-within .nav-sub-list {
@@ -1970,7 +1965,9 @@ tbody tr:last-child td {
   .sidebar:hover .nav-group.active .nav-sub-list,
   .sidebar:focus-within .nav-group.active .nav-sub-list,
   .sidebar:hover .nav-group:hover .nav-sub-list,
-  .sidebar:focus-within .nav-group:focus-within .nav-sub-list {
+  .sidebar:focus-within .nav-group:focus-within .nav-sub-list,
+  .sidebar:hover .nav-sub-list,
+  .sidebar:focus-within .nav-sub-list {
     display: grid;
   }
 
@@ -2061,7 +2058,9 @@ tbody tr:last-child td {
   .nav-group:hover .nav-sub-list,
   .nav-group:focus-within .nav-sub-list,
   .sidebar:hover .nav-group.active .nav-sub-list,
-  .sidebar:focus-within .nav-group.active .nav-sub-list {
+  .sidebar:focus-within .nav-group.active .nav-sub-list,
+  .sidebar:hover .nav-sub-list,
+  .sidebar:focus-within .nav-sub-list {
     display: none;
   }
 
