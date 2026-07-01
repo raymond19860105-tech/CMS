@@ -2063,7 +2063,7 @@ tbody tr:last-child td {
 @media (max-width: 760px) {
   .app-shell {
     display: grid;
-    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-columns: 64px minmax(0, 1fr);
     align-items: start;
     min-height: 100vh;
   }
@@ -2071,7 +2071,7 @@ tbody tr:last-child td {
   .sidebar,
   .sidebar:hover,
   .sidebar:focus-within {
-    width: 76px;
+    width: 64px;
     overflow-x: hidden;
     box-shadow: none;
   }
@@ -2080,8 +2080,8 @@ tbody tr:last-child td {
     position: sticky;
     top: 0;
     height: 100vh;
-    gap: 12px;
-    padding: 10px 8px;
+    gap: 10px;
+    padding: 10px 6px;
   }
 
   .brand-block,
@@ -2093,8 +2093,8 @@ tbody tr:last-child td {
   }
 
   .brand-mark {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
   }
 
   .brand-block div:not(.brand-mark),
@@ -2107,7 +2107,7 @@ tbody tr:last-child td {
     grid-auto-flow: row;
     grid-auto-columns: auto;
     grid-auto-rows: auto;
-    gap: 6px;
+    gap: 8px;
     overflow-x: hidden;
     overflow-y: auto;
     padding-bottom: 0;
@@ -2124,27 +2124,29 @@ tbody tr:last-child td {
   .sidebar:focus-within .nav-group.active .nav-sub-list,
   .sidebar:hover .nav-sub-list,
   .sidebar:focus-within .nav-sub-list {
-    display: none;
+    display: none !important;
   }
 
   .nav-button,
   .sidebar:hover .nav-button,
   .sidebar:focus-within .nav-button {
-    min-height: 54px;
+    min-height: 48px;
     grid-template-columns: 1fr;
     justify-items: center;
-    gap: 4px;
-    padding: 7px 4px;
+    gap: 0;
+    padding: 6px 4px;
   }
 
-  .nav-button span:not(.nav-icon):not(.nav-count) {
-    display: block;
-    max-width: 58px;
-    font-size: 10px;
-    line-height: 1.15;
-    text-align: center;
-    white-space: normal;
-    overflow-wrap: anywhere;
+  .nav-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
+  }
+
+  .nav-button span:not(.nav-icon):not(.nav-count),
+  .sidebar:hover .nav-button span:not(.nav-icon):not(.nav-count),
+  .sidebar:focus-within .nav-button span:not(.nav-icon):not(.nav-count) {
+    display: none !important;
   }
 
   .nav-count,
