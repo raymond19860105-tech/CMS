@@ -4283,7 +4283,41 @@ localeSelect?.addEventListener("change", (event) => {
   showToast(`語系已切換：${localeNames[state.locale]}`);
 });
 
+function lockViewportZoom() {
+  const viewport = document.querySelector("meta[name='viewport']");
+  const viewportContent = "width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no";
+  viewport?.setAttribute("content", viewportContent);
+
+  const preventZoom = (event) => event.preventDefault();
+  ["gesturestart", "gesturechange", "gestureend"].forEach((eventName) => {
+    document.addEventListener(eventName, preventZoom, { passive: false });
+  });
+
+  document.addEventListener(
+    "touchmove",
+    (event) => {
+      if (event.touches.length > 1) event.preventDefault();
+    },
+    { passive: false },
+  );
+
+  document.addEventListener(
+    "wheel",
+    (event) => {
+      if (event.ctrlKey || event.metaKey) event.preventDefault();
+    },
+    { passive: false },
+  );
+}
+
+lockViewportZoom();
+
 document.addEventListener("keydown", (event) => {
+  if ((event.ctrlKey || event.metaKey) && ["+", "-", "=", "0", "_"].includes(event.key)) {
+    event.preventDefault();
+    return;
+  }
+
   if (event.key === "Escape" && !modalBackdrop.hidden) closeModal();
 });
 
