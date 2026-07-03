@@ -16,7 +16,7 @@ const navItems = [
     icon: "P",
     sections: [
       { id: "players-list", label: "玩家列表" },
-      { id: "players-profile", label: "360 主檔" },
+      { id: "players-profile", label: "玩家資料" },
       { id: "players-work", label: "關聯工作" }
     ]
   },
@@ -167,8 +167,9 @@ const localeReplacements = {
     "Waiting": "等待",
     "Priority": "優先級",
     "Portfolio": "玩家組合",
-    "Player List + 360 Profile": "玩家列表 + 360 主檔",
-    "Open Profile": "Player 360",
+    "Player List + Player Profile": "玩家列表 + 玩家資料",
+    "Open Profile": "玩家資料",
+    "Player Profile": "玩家資料",
     "Send Message": "發送訊息",
     "Create Ticket": "建立工單",
     "Add Note": "新增備註",
@@ -461,8 +462,9 @@ const localeReplacements = {
     "Waiting": "Đợi",
     "Priority": "Ưu tiên",
     "Portfolio": "Danh mục",
-    "Player List + 360 Profile": "Danh sách người chơi + hồ sơ 360",
-    "Open Profile": "Player 360",
+    "Player List + Player Profile": "Danh sách người chơi + hồ sơ người chơi",
+    "Open Profile": "Hồ sơ người chơi",
+    "Player Profile": "Hồ sơ người chơi",
     "Send Message": "Gửi tin nhắn",
     "Create Ticket": "Tạo ticket",
     "Add Note": "Thêm ghi chú",
@@ -1209,7 +1211,7 @@ const state = {
 
 const titles = {
   dashboard: ["VIP 控制中心", "儀表板"],
-  players: ["Player 360", "VIP 玩家"],
+  players: ["玩家資料", "VIP 玩家"],
   inbox: ["全渠道客服", "收件匣"],
   ai: ["AI Copilot", "AI 客服"],
   tickets: ["SLA 營運", "工單"],
@@ -2001,7 +2003,7 @@ function taskCard(task) {
       </div>
       <p>${task.reason}</p>
       <div class="profile-actions">
-        <button class="subtle-button" data-open-profile="${player.id}" type="button">Player 360</button>
+        <button class="subtle-button" data-open-profile="${player.id}" type="button">Player Profile</button>
         <button class="ghost-button" data-send-message="${player.id}" type="button">Send Message</button>
       </div>
     </article>
@@ -2033,7 +2035,7 @@ function renderPlayers() {
       <div class="view-header">
         <div>
           <p class="eyebrow">Portfolio</p>
-          <h2>Player List + 360 Profile</h2>
+          <h2>Player List + Player Profile</h2>
         </div>
         <button class="primary-button" data-action="create-ticket" data-player="${activePlayer.id}" type="button">新增工單</button>
       </div>
@@ -2372,7 +2374,7 @@ function renderInbox() {
             <h3>${player.name} · ${conversation.topic}</h3>
           </div>
           <div class="profile-actions">
-            <button class="subtle-button" data-open-profile="${player.id}" type="button">Player 360</button>
+            <button class="subtle-button" data-open-profile="${player.id}" type="button">Player Profile</button>
             <button class="subtle-button" data-action="create-ticket" data-player="${player.id}" type="button">轉工單</button>
           </div>
         </header>
@@ -2726,7 +2728,7 @@ function renderTickets() {
                       <td>
                         <div class="row-actions">
                           <button class="subtle-button" data-open-ticket="${ticket.id}" type="button">處理</button>
-                          <button class="ghost-button" data-open-profile="${player.id}" type="button">Player 360</button>
+                          <button class="ghost-button" data-open-profile="${player.id}" type="button">Player Profile</button>
                         </div>
                       </td>
                     </tr>
@@ -3037,7 +3039,7 @@ function renderRisk() {
                 <p><strong>${player.name}</strong> · ${player.id}</p>
                 <p>${alert.action}</p>
                 <div class="profile-actions">
-                  <button class="subtle-button" data-open-profile="${player.id}" type="button">Player 360</button>
+                  <button class="subtle-button" data-open-profile="${player.id}" type="button">Player Profile</button>
                   <button class="ghost-button" data-action="risk-note" data-player="${player.id}" type="button">處理紀錄</button>
                 </div>
               </article>
@@ -3125,7 +3127,7 @@ function renderResponsibleGaming() {
                       ${rgSignalPill("Deposit Pattern", player.behavior.depositPattern, player.behavior.depositPattern.includes("短間隔") ? "pending" : "open")}
                     </div>
                     <div class="profile-actions">
-                      <button class="subtle-button" data-open-profile="${player.id}" type="button">Player 360</button>
+                      <button class="subtle-button" data-open-profile="${player.id}" type="button">Player Profile</button>
                       <button class="ghost-button" data-action="rg-action" data-player="${player.id}" type="button">設定限制</button>
                     </div>
                   </article>
@@ -3278,7 +3280,7 @@ function renderReports() {
       primary: `${tickets.filter((ticket) => /Complaint|Withdrawal|Responsible/i.test(ticket.category)).length} 件`,
       secondary: "投訴 / 出金 / RG 相關",
       warning: "同玩家多工單或 SLA breach 會放大客訴與監管風險。",
-      action: "把對話、工單、內部備註串回 Player 360。",
+      action: "把對話、工單、內部備註串回玩家資料。",
       bars: [30, 28, 34, 26, 21, 18]
     },
     {
@@ -3569,7 +3571,7 @@ function openTicketModal(playerId) {
           <textarea id="ticketDescription" required placeholder="描述問題、玩家情境、已查證資訊與下一步"></textarea>
         </label>
         <div class="modal-form-row">
-          <p class="message-meta">建立後會自動連回 Player 360 與對話紀錄。</p>
+          <p class="message-meta">建立後會自動連回玩家資料與對話紀錄。</p>
           <button class="primary-button" type="submit">建立工單</button>
         </div>
       </form>
@@ -4208,7 +4210,7 @@ document.addEventListener("submit", (event) => {
   if (event.target.id === "noteForm") {
     event.preventDefault();
     closeModal();
-    showToast("備註已儲存至 Player 360。");
+    showToast("備註已儲存至玩家資料。");
   }
 
   if (event.target.id === "taskForm") {
