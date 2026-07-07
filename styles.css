@@ -1407,6 +1407,84 @@ tbody tr:last-child td {
   line-height: 1.45;
 }
 
+.subsection-title {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 10px;
+}
+
+.subsection-title strong {
+  font-size: 14px;
+}
+
+.custom-rule-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.custom-rule-list {
+  display: grid;
+  gap: 8px;
+}
+
+.custom-rule-card {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fbfcfa;
+}
+
+.custom-rule-card.disabled {
+  opacity: 0.62;
+}
+
+.custom-rule-head,
+.custom-rule-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.custom-rule-head strong {
+  display: block;
+  font-size: 13px;
+}
+
+.custom-rule-head span:not(.status) {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.custom-rule-card p {
+  display: grid;
+  gap: 3px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.custom-rule-card b {
+  color: var(--ink);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.custom-rule-form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .ai-fold-panel {
   padding: 0;
   overflow: hidden;
@@ -2259,6 +2337,15 @@ tbody tr:last-child td {
 
   .ai-rule-item {
     grid-template-columns: 1fr;
+  }
+
+  .custom-rule-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .custom-rule-actions button {
+    width: 100%;
   }
 
   .queue-meta {

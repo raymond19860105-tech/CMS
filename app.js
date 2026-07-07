@@ -235,6 +235,15 @@ const localeReplacements = {
     "VIP Level Rules": "VIP 等級規則",
     "SLA Rules": "SLA 規則",
     "Template Control": "話術控管",
+    "Custom Rules": "自訂規則",
+    "Rule Name": "規則名稱",
+    "Condition": "判斷條件",
+    "Decision": "處理方式",
+    "Decision Level": "處理層級",
+    "Add Rule": "新增規則",
+    "Enabled": "啟用",
+    "Disabled": "停用",
+    "No custom rules yet": "尚無自訂規則",
     "Open": "未結",
     "Review": "審核",
     "Escalated": "已升級",
@@ -250,6 +259,21 @@ const localeReplacements = {
     "玩家關係管理": "Player Relationship Management",
     "Player ID、帳號、標籤、工單": "Player ID, username, tags, tickets",
     "Player ID、帳號、標籤": "Player ID, username, tags",
+    "自訂規則": "Custom Rules",
+    "規則名稱": "Rule Name",
+    "判斷條件": "Condition",
+    "處理方式": "Decision",
+    "處理層級": "Decision Level",
+    "新增規則": "Add Rule",
+    "啟用": "Enabled",
+    "停用": "Disabled",
+    "尚無自訂規則": "No custom rules yet",
+    "刪除": "Delete",
+    "開啟": "Enable",
+    "關閉": "Disable",
+    "規則已新增": "Rule added",
+    "規則已更新": "Rule updated",
+    "規則已刪除": "Rule deleted",
     "語系已切換": "Language switched",
     "已切換角色視角": "Role view switched",
     "：": ": ",
@@ -318,7 +342,9 @@ const localeReplacements = {
     "阻擋": "Blocked",
     "待輸入": "Pending input",
     "可引導": "Can guide",
+    "可自動": "Auto allowed",
     "需審核": "Approval needed",
+    "需接管": "Manual takeover",
     "指派客服": "Assigned Agent",
     "最近入金": "Last Deposit",
     "最近投注": "Last Bet",
@@ -530,6 +556,15 @@ const localeReplacements = {
     "VIP Level Rules": "Quy tắc cấp VIP",
     "SLA Rules": "Quy tắc SLA",
     "Template Control": "Kiểm soát mẫu câu",
+    "Custom Rules": "Quy tắc tùy chỉnh",
+    "Rule Name": "Tên quy tắc",
+    "Condition": "Điều kiện",
+    "Decision": "Cách xử lý",
+    "Decision Level": "Mức xử lý",
+    "Add Rule": "Thêm quy tắc",
+    "Enabled": "Bật",
+    "Disabled": "Tắt",
+    "No custom rules yet": "Chưa có quy tắc tùy chỉnh",
     "Open": "Mở",
     "Review": "Đang xét",
     "Escalated": "Đã chuyển cấp",
@@ -541,6 +576,21 @@ const localeReplacements = {
     "玩家關係管理": "Quản lý quan hệ người chơi",
     "Player ID、帳號、標籤、工單": "Player ID, tài khoản, nhãn, ticket",
     "Player ID、帳號、標籤": "Player ID, tài khoản, nhãn",
+    "自訂規則": "Quy tắc tùy chỉnh",
+    "規則名稱": "Tên quy tắc",
+    "判斷條件": "Điều kiện",
+    "處理方式": "Cách xử lý",
+    "處理層級": "Mức xử lý",
+    "新增規則": "Thêm quy tắc",
+    "啟用": "Bật",
+    "停用": "Tắt",
+    "尚無自訂規則": "Chưa có quy tắc tùy chỉnh",
+    "刪除": "Xóa",
+    "開啟": "Bật",
+    "關閉": "Tắt",
+    "規則已新增": "Đã thêm quy tắc",
+    "規則已更新": "Đã cập nhật quy tắc",
+    "規則已刪除": "Đã xóa quy tắc",
     "語系已切換": "Đã đổi ngôn ngữ",
     "已切換角色視角": "Đã đổi vai trò",
     "：": ": ",
@@ -609,7 +659,9 @@ const localeReplacements = {
     "阻擋": "Chặn",
     "待輸入": "Chờ nhập",
     "可引導": "Có thể hướng dẫn",
+    "可自動": "Có thể tự động",
     "需審核": "Cần duyệt",
+    "需接管": "Cần tiếp quản",
     "指派客服": "CS phụ trách",
     "最近入金": "Nạp gần nhất",
     "最近投注": "Cược gần nhất",
@@ -1197,6 +1249,14 @@ let aiAuditEvents = [
   { id: "AI-9003", conversationId: "C-1007", action: "Suggested Payment handoff", status: "Review", at: "今日 13:44" }
 ];
 
+const customDecisionRuleStatuses = [
+  { value: "open", label: "可自動" },
+  { value: "pending", label: "需審核" },
+  { value: "blocked", label: "需接管" }
+];
+
+let customDecisionRules = loadCustomDecisionRules();
+
 const state = {
   view: "dashboard",
   activeSection: "dashboard-overview",
@@ -1248,6 +1308,37 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function loadCustomDecisionRules() {
+  try {
+    const raw = localStorage.getItem("vip-cs-custom-decision-rules");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((rule) => rule && typeof rule === "object")
+      .map((rule) => ({
+        id: String(rule.id || `CR-${Date.now()}`),
+        name: String(rule.name || "").trim(),
+        condition: String(rule.condition || "").trim(),
+        decision: String(rule.decision || "").trim(),
+        status: customDecisionRuleStatuses.some((item) => item.value === rule.status) ? rule.status : "pending",
+        enabled: rule.enabled !== false,
+        updated: String(rule.updated || "剛剛")
+      }))
+      .filter((rule) => rule.name && rule.condition && rule.decision);
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveCustomDecisionRules() {
+  try {
+    localStorage.setItem("vip-cs-custom-decision-rules", JSON.stringify(customDecisionRules));
+  } catch (error) {
+    // Keep in-memory rules available when browser storage is restricted.
+  }
 }
 
 function replacementEntries(locale) {
@@ -1495,6 +1586,50 @@ function conversationText(conversation) {
   return conversation.messages.map((message) => message.body).join(" ");
 }
 
+function customRuleStatusLabel(status) {
+  return customDecisionRuleStatuses.find((item) => item.value === status)?.label || "需審核";
+}
+
+function customDecisionRuleById(id) {
+  return customDecisionRules.find((rule) => rule.id === id);
+}
+
+function customRuleSearchTokens(rule) {
+  const stopWords = new Set(["and", "or", "the", "with", "以及", "或", "且", "與", "和", "需", "需要"]);
+  return `${rule.name} ${rule.condition}`
+    .toLowerCase()
+    .split(/[\s,，、/＋+;；:：|()（）\[\]{}<>]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 2 && !stopWords.has(token));
+}
+
+function customRuleContext(conversation, player, category, text) {
+  return [
+    text,
+    category,
+    conversation.priority,
+    conversation.channel,
+    player.id,
+    player.name,
+    `VIP ${player.vipLevel}`,
+    player.rgRisk,
+    player.kyc,
+    player.tags.join(" "),
+    player.behavior.depositPattern
+  ]
+    .join(" ")
+    .toLowerCase();
+}
+
+function customDecisionRuleMatches(rule, conversation, player, category, text) {
+  if (!rule.enabled) return false;
+  const tokens = customRuleSearchTokens(rule);
+  if (!tokens.length) return false;
+  const context = customRuleContext(conversation, player, category, text);
+  const matched = tokens.filter((token) => context.includes(token)).length;
+  return matched >= Math.min(2, tokens.length);
+}
+
 function aiAnalyzeConversation(conversation) {
   const player = playerById(conversation.playerId);
   const text = `${conversation.topic} ${conversationText(conversation)}`;
@@ -1529,8 +1664,19 @@ function aiAnalyzeConversation(conversation) {
   if (player.tags.includes("Bonus Abuse") || player.tags.includes("Arbitrage")) blockers.push("Bonus Abuse / Arbitrage");
   if (conversation.priority === "P0" || conversation.priority === "P1") blockers.push(`${conversation.priority} 優先級`);
 
-  const severity = blockers.some((item) => /RG High|AML|P0|Bonus Abuse/i.test(item)) ? "high" : blockers.length ? "medium" : "low";
-  const autoReplyAllowed = severity === "low" && !["Responsible Gaming", "Withdrawal Delay", "Bonus Request", "Complaint"].includes(category);
+  const matchedCustomRules = customDecisionRules.filter((rule) => customDecisionRuleMatches(rule, conversation, player, category, text));
+  matchedCustomRules
+    .filter((rule) => rule.status !== "open")
+    .forEach((rule) => blockers.push(`自訂規則：${rule.name}`));
+
+  let severity = blockers.some((item) => /RG High|AML|P0|Bonus Abuse/i.test(item)) ? "high" : blockers.length ? "medium" : "low";
+  if (matchedCustomRules.some((rule) => rule.status === "blocked")) severity = "high";
+  if (severity === "low" && matchedCustomRules.some((rule) => rule.status === "pending")) severity = "medium";
+
+  const autoReplyAllowed =
+    severity === "low" &&
+    !["Responsible Gaming", "Withdrawal Delay", "Bonus Request", "Complaint"].includes(category) &&
+    !matchedCustomRules.some((rule) => rule.status !== "open");
   const route = category === "Responsible Gaming"
     ? "Compliance / RG Officer"
     : category === "Withdrawal Delay"
@@ -1551,13 +1697,14 @@ function aiAnalyzeConversation(conversation) {
     blockers,
     route,
     autoReplyAllowed,
-    summary: aiConversationSummary(conversation, player, category),
+    matchedCustomRules,
+    summary: aiConversationSummary(conversation, player, category, matchedCustomRules),
     suggestedReply: aiSuggestedReply(category, player),
     sources: aiKnowledgeBase.filter((item) => item.category === category || (category === "General" && item.category === "Complaint")).slice(0, 2)
   };
 }
 
-function aiConversationSummary(conversation, player, category) {
+function aiConversationSummary(conversation, player, category, matchedCustomRules = []) {
   const latestPlayerMessage = [...conversation.messages].reverse().find((message) => message.sender === "player");
   const pieces = [
     `${player.name}（${player.id} / VIP ${player.vipLevel}）透過 ${conversation.channel} 詢問：${conversation.topic}。`,
@@ -1566,6 +1713,9 @@ function aiConversationSummary(conversation, player, category) {
   ];
   if (player.rgRisk === "High") pieces.push("玩家為 RG High，不可使用促銷或刺激投注話術。");
   if (player.kyc !== "通過") pieces.push("KYC 未完成，只能說明可揭露的審核狀態。");
+  matchedCustomRules.forEach((rule) => {
+    pieces.push(`命中自訂規則「${rule.name}」：${customRuleStatusLabel(rule.status)}，${rule.decision}`);
+  });
   return pieces;
 }
 
@@ -2504,6 +2654,67 @@ function blockedOfferReason(player) {
   return "無硬性阻擋，仍需依額度規則檢查";
 }
 
+function renderCustomDecisionRules() {
+  const rulesMarkup = customDecisionRules.length
+    ? customDecisionRules
+      .map(
+        (rule) => `
+          <article class="custom-rule-card ${rule.enabled ? "" : "disabled"}">
+            <div class="custom-rule-head">
+              <div>
+                <strong>${escapeHtml(rule.name)}</strong>
+                <span>${rule.enabled ? "Enabled" : "Disabled"}</span>
+              </div>
+              <span class="status ${rule.status}">${customRuleStatusLabel(rule.status)}</span>
+            </div>
+            <p><b>Condition</b>${escapeHtml(rule.condition)}</p>
+            <p><b>Decision</b>${escapeHtml(rule.decision)}</p>
+            <div class="custom-rule-actions">
+              <button class="subtle-button" data-custom-rule-toggle="${escapeHtml(rule.id)}" type="button">${rule.enabled ? "停用" : "啟用"}</button>
+              <button class="ghost-button" data-custom-rule-delete="${escapeHtml(rule.id)}" type="button">刪除</button>
+            </div>
+          </article>
+        `
+      )
+      .join("")
+    : `<div class="empty-state compact">No custom rules yet</div>`;
+
+  return `
+    <div class="custom-rule-section">
+      <div class="subsection-title">
+        <p class="eyebrow">Custom Rules</p>
+        <strong>自訂規則</strong>
+      </div>
+      <div class="custom-rule-list">
+        ${rulesMarkup}
+      </div>
+      <form class="custom-rule-form" id="customRuleForm">
+        <label class="field">
+          <span>Rule Name</span>
+          <input id="customRuleName" maxlength="40" required placeholder="高價值投訴需主管審核" />
+        </label>
+        <label class="field">
+          <span>Condition</span>
+          <input id="customRuleCondition" maxlength="80" required placeholder="VIP 4+ 且 投訴 / 出金延遲" />
+        </label>
+        <label class="field">
+          <span>Decision Level</span>
+          <select id="customRuleStatus">
+            ${customDecisionRuleStatuses
+              .map((status) => `<option value="${status.value}">${status.label}</option>`)
+              .join("")}
+          </select>
+        </label>
+        <label class="field">
+          <span>Decision</span>
+          <textarea id="customRuleDecision" maxlength="140" required placeholder="建立 P1 工單，指派 Team Leader 審核後回覆"></textarea>
+        </label>
+        <button class="primary-button" type="submit">Add Rule</button>
+      </form>
+    </div>
+  `;
+}
+
 function renderAiDesk() {
   const analyses = aiAnalyses().sort((a, b) => {
     const weight = { high: 0, medium: 1, low: 2 };
@@ -2568,6 +2779,7 @@ function renderAiDesk() {
                 )
                 .join("")}
             </div>
+            ${renderCustomDecisionRules()}
           </section>
 
           <details class="panel ai-fold-panel" data-section="ai-audit">
@@ -4052,6 +4264,28 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const customRuleToggle = event.target.closest("[data-custom-rule-toggle]");
+  if (customRuleToggle) {
+    const rule = customDecisionRuleById(customRuleToggle.dataset.customRuleToggle);
+    if (rule) {
+      rule.enabled = !rule.enabled;
+      rule.updated = "剛剛";
+      saveCustomDecisionRules();
+      showToast("規則已更新。");
+      render();
+    }
+    return;
+  }
+
+  const customRuleDelete = event.target.closest("[data-custom-rule-delete]");
+  if (customRuleDelete) {
+    customDecisionRules = customDecisionRules.filter((rule) => rule.id !== customRuleDelete.dataset.customRuleDelete);
+    saveCustomDecisionRules();
+    showToast("規則已刪除。");
+    render();
+    return;
+  }
+
   const actionButton = event.target.closest("[data-action]");
   if (actionButton) {
     const playerId = actionButton.dataset.player || state.activePlayerId;
@@ -4135,6 +4369,28 @@ document.addEventListener("submit", (event) => {
     event.preventDefault();
     const input = document.querySelector("#messageInput");
     sendMessage(input ? input.value : "");
+  }
+
+  if (event.target.id === "customRuleForm") {
+    event.preventDefault();
+    const name = document.querySelector("#customRuleName").value.trim();
+    const condition = document.querySelector("#customRuleCondition").value.trim();
+    const decision = document.querySelector("#customRuleDecision").value.trim();
+    const status = document.querySelector("#customRuleStatus").value;
+    if (!name || !condition || !decision) return;
+
+    customDecisionRules.unshift({
+      id: `CR-${Date.now().toString(36).toUpperCase()}`,
+      name,
+      condition,
+      decision,
+      status: customDecisionRuleStatuses.some((item) => item.value === status) ? status : "pending",
+      enabled: true,
+      updated: "剛剛"
+    });
+    saveCustomDecisionRules();
+    showToast("規則已新增。");
+    render();
   }
 
   if (event.target.id === "bonusForm") {
