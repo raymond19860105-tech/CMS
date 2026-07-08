@@ -280,9 +280,12 @@ const localeReplacements = {
     "規則建立": "Rule Builder",
     "自訂規則": "Custom Rules",
     "新增自訂規則": "Add Custom Rule",
+    "編輯自訂規則": "Edit Custom Rule",
     "已建立規則": "Created Rules",
     "規則名稱": "Rule Name",
     "判斷條件": "Condition",
+    "比較方式": "Operator",
+    "條件值": "Value",
     "處理方式": "Decision",
     "處理層級": "Decision Level",
     "第一層處理": "First Handler",
@@ -314,6 +317,9 @@ const localeReplacements = {
     "停用": "Disabled",
     "尚無自訂規則": "No custom rules yet",
     "刪除": "Delete",
+    "編輯": "Edit",
+    "儲存規則": "Save Rule",
+    "取消編輯": "Cancel Edit",
     "開啟": "Enable",
     "關閉": "Disable",
     "規則已新增": "Rule added",
@@ -632,9 +638,12 @@ const localeReplacements = {
     "規則建立": "Tạo quy tắc",
     "自訂規則": "Quy tắc tùy chỉnh",
     "新增自訂規則": "Thêm quy tắc tùy chỉnh",
+    "編輯自訂規則": "Sửa quy tắc tùy chỉnh",
     "已建立規則": "Quy tắc đã tạo",
     "規則名稱": "Tên quy tắc",
     "判斷條件": "Điều kiện",
+    "比較方式": "Cách so sánh",
+    "條件值": "Giá trị",
     "處理方式": "Cách xử lý",
     "處理層級": "Mức xử lý",
     "第一層處理": "Tầng xử lý đầu tiên",
@@ -666,6 +675,9 @@ const localeReplacements = {
     "停用": "Tắt",
     "尚無自訂規則": "Chưa có quy tắc tùy chỉnh",
     "刪除": "Xóa",
+    "編輯": "Sửa",
+    "儲存規則": "Lưu quy tắc",
+    "取消編輯": "Hủy sửa",
     "開啟": "Bật",
     "關閉": "Tắt",
     "規則已新增": "Đã thêm quy tắc",
@@ -1416,6 +1428,7 @@ const customRuleAssignmentLevels = [
 ];
 
 let customDecisionRules = loadCustomDecisionRules();
+let editingCustomRuleId = "";
 
 const state = {
   view: "dashboard",
@@ -1500,6 +1513,10 @@ function customRuleOptionLabel(definition, option) {
 function customRuleConditionValueLabel(condition) {
   if (condition.type === "rgRisk") return rgRiskLabel(condition.value);
   return condition.value;
+}
+
+function customRuleConditionForType(rule, type) {
+  return normalizeCustomRuleConditions(rule || {}).find((condition) => condition.type === type);
 }
 
 function normalizeCustomRuleConditions(rule) {
@@ -2912,38 +2929,49 @@ function blockedOfferReason(player) {
   return "無硬性阻擋，仍需依額度規則檢查";
 }
 
-function renderCustomRuleConditionInput(definition) {
+function renderCustomRuleConditionInput(definition, editingRule = null) {
+  const editingCondition = customRuleConditionForType(editingRule, definition.value);
+  const checked = editingRule ? Boolean(editingCondition) : definition.value === "vipLevel";
+  const activeOperator = editingCondition?.operator || definition.defaultOperator;
+  const activeValue = editingCondition?.value || (definition.value === "vipLevel" ? "4" : "");
   const operators = definition.operators || [definition.defaultOperator || "eq"];
-  const operatorMarkup = operators.length > 1
-    ? `
+  const operatorMarkup = `
+    <label class="condition-field">
+      <span>比較方式</span>
       <select class="condition-operator" data-rule-condition-operator="${definition.value}" aria-label="${definition.label} 比較方式">
         ${operators
-          .map((operator) => `<option value="${operator}" ${operator === definition.defaultOperator ? "selected" : ""}>${customRuleOperatorDefinition(operator).label}</option>`)
+          .map((operator) => `<option value="${operator}" ${operator === activeOperator ? "selected" : ""}>${customRuleOperatorDefinition(operator).label}</option>`)
           .join("")}
       </select>
-    `
-    : `<span class="condition-operator fixed">${customRuleOperatorDefinition(operators[0]).label}</span>`;
+    </label>
+  `;
 
   const valueMarkup = definition.input === "select"
     ? `
-      <select data-rule-condition-value="${definition.value}" aria-label="${definition.label} 條件值">
-        ${definition.options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(customRuleOptionLabel(definition, option))}</option>`).join("")}
-      </select>
+      <label class="condition-field">
+        <span>條件值</span>
+        <select data-rule-condition-value="${definition.value}" aria-label="${definition.label} 條件值">
+          ${definition.options.map((option) => `<option value="${escapeHtml(option)}" ${option === activeValue ? "selected" : ""}>${escapeHtml(customRuleOptionLabel(definition, option))}</option>`).join("")}
+        </select>
+      </label>
     `
     : `
-      <input
-        data-rule-condition-value="${definition.value}"
-        type="${definition.input === "number" ? "number" : "text"}"
-        ${definition.input === "number" ? 'inputmode="numeric" min="0" max="9" step="1"' : ""}
-        placeholder="${escapeHtml(definition.placeholder || "")}"
-        value="${definition.value === "vipLevel" ? "4" : ""}"
-      />
+      <label class="condition-field">
+        <span>條件值</span>
+        <input
+          data-rule-condition-value="${definition.value}"
+          type="${definition.input === "number" ? "number" : "text"}"
+          ${definition.input === "number" ? 'inputmode="numeric" min="0" max="9" step="1"' : ""}
+          placeholder="${escapeHtml(definition.placeholder || "")}"
+          value="${escapeHtml(activeValue)}"
+        />
+      </label>
     `;
 
   return `
     <div class="condition-row">
       <label class="condition-toggle">
-        <input data-rule-condition-check="${definition.value}" type="checkbox" ${definition.value === "vipLevel" ? "checked" : ""} />
+        <input data-rule-condition-check="${definition.value}" type="checkbox" ${checked ? "checked" : ""} />
         <span>${definition.label}</span>
       </label>
       ${operatorMarkup}
@@ -2968,15 +2996,17 @@ function customRuleConditionsFromForm(form) {
 }
 
 function renderCustomDecisionRules() {
+  const editingRule = customDecisionRuleById(editingCustomRuleId);
+  const isEditing = Boolean(editingRule);
   const rulesMarkup = customDecisionRules.length
     ? customDecisionRules
       .map(
         (rule) => `
-          <article class="custom-rule-card ${rule.enabled ? "" : "disabled"}">
+          <article class="custom-rule-card ${rule.enabled ? "" : "disabled"} ${rule.id === editingCustomRuleId ? "editing" : ""}">
             <div class="custom-rule-head">
               <div>
                 <strong>${escapeHtml(rule.name)}</strong>
-                <span>${rule.enabled ? "Enabled" : "Disabled"}</span>
+                <span>${rule.enabled ? "Enabled" : "Disabled"} · ${escapeHtml(rule.updated || "剛剛")}</span>
               </div>
               <span class="status ${rule.status}">${customRuleStatusLabel(rule.status)}</span>
             </div>
@@ -2984,6 +3014,7 @@ function renderCustomDecisionRules() {
             <p><b>第一層處理</b>${escapeHtml(rule.firstLevel || "Team Leader")}</p>
             <p><b>處理方式</b>${escapeHtml(rule.decision)}</p>
             <div class="custom-rule-actions">
+              <button class="subtle-button" data-custom-rule-edit="${escapeHtml(rule.id)}" type="button">編輯</button>
               <button class="subtle-button" data-custom-rule-toggle="${escapeHtml(rule.id)}" type="button">${rule.enabled ? "停用" : "啟用"}</button>
               <button class="ghost-button" data-custom-rule-delete="${escapeHtml(rule.id)}" type="button">刪除</button>
             </div>
@@ -3005,21 +3036,21 @@ function renderCustomDecisionRules() {
       <form class="custom-rule-form" id="customRuleForm">
         <div class="subsection-title">
           <p class="eyebrow">Rule Builder</p>
-          <strong>新增自訂規則</strong>
+          <strong>${isEditing ? "編輯自訂規則" : "新增自訂規則"}</strong>
         </div>
         <label class="field">
           <span>Rule Name</span>
-          <input id="customRuleName" maxlength="40" required placeholder="高價值投訴需主管審核" />
+          <input id="customRuleName" maxlength="40" required placeholder="高價值投訴需主管審核" value="${escapeHtml(editingRule?.name || "")}" />
         </label>
         <fieldset class="condition-picker">
           <legend>判斷條件</legend>
-          ${customRuleConditionTypes.map((definition) => renderCustomRuleConditionInput(definition)).join("")}
+          ${customRuleConditionTypes.map((definition) => renderCustomRuleConditionInput(definition, editingRule)).join("")}
         </fieldset>
         <label class="field">
           <span>Decision Level</span>
           <select id="customRuleStatus">
             ${customDecisionRuleStatuses
-              .map((status) => `<option value="${status.value}">${status.label}</option>`)
+              .map((status) => `<option value="${status.value}" ${status.value === (editingRule?.status || "pending") ? "selected" : ""}>${status.label}</option>`)
               .join("")}
           </select>
         </label>
@@ -3027,15 +3058,18 @@ function renderCustomDecisionRules() {
           <span>第一層處理</span>
           <select id="customRuleFirstLevel">
             ${customRuleAssignmentLevels
-              .map((level) => `<option value="${escapeHtml(level)}">${escapeHtml(level)}</option>`)
+              .map((level) => `<option value="${escapeHtml(level)}" ${level === (editingRule?.firstLevel || "Team Leader") ? "selected" : ""}>${escapeHtml(level)}</option>`)
               .join("")}
           </select>
         </label>
         <label class="field">
           <span>Decision</span>
-          <textarea id="customRuleDecision" maxlength="140" required placeholder="建立 P1 工單，指派 Team Leader 審核後回覆"></textarea>
+          <textarea id="customRuleDecision" maxlength="140" required placeholder="建立 P1 工單，指派 Team Leader 審核後回覆">${escapeHtml(editingRule?.decision || "")}</textarea>
         </label>
-        <button class="primary-button" type="submit">Add Rule</button>
+        <div class="custom-rule-form-actions">
+          <button class="primary-button" type="submit">${isEditing ? "儲存規則" : "Add Rule"}</button>
+          ${isEditing ? `<button class="ghost-button" data-custom-rule-cancel-edit type="button">取消編輯</button>` : ""}
+        </div>
       </form>
       <div class="custom-rule-list-panel">
         <div class="subsection-title">
@@ -4602,6 +4636,19 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const customRuleEdit = event.target.closest("[data-custom-rule-edit]");
+  if (customRuleEdit) {
+    editingCustomRuleId = customRuleEdit.dataset.customRuleEdit;
+    render();
+    return;
+  }
+
+  if (event.target.closest("[data-custom-rule-cancel-edit]")) {
+    editingCustomRuleId = "";
+    render();
+    return;
+  }
+
   const customRuleToggle = event.target.closest("[data-custom-rule-toggle]");
   if (customRuleToggle) {
     const rule = customDecisionRuleById(customRuleToggle.dataset.customRuleToggle);
@@ -4617,6 +4664,7 @@ document.addEventListener("click", (event) => {
 
   const customRuleDelete = event.target.closest("[data-custom-rule-delete]");
   if (customRuleDelete) {
+    if (editingCustomRuleId === customRuleDelete.dataset.customRuleDelete) editingCustomRuleId = "";
     customDecisionRules = customDecisionRules.filter((rule) => rule.id !== customRuleDelete.dataset.customRuleDelete);
     saveCustomDecisionRules();
     showToast("規則已刪除。");
@@ -4723,19 +4771,27 @@ document.addEventListener("submit", (event) => {
       return;
     }
 
-    customDecisionRules.unshift({
-      id: `CR-${Date.now().toString(36).toUpperCase()}`,
+    const editingRule = customDecisionRuleById(editingCustomRuleId);
+    const nextRule = {
+      id: editingRule?.id || `CR-${Date.now().toString(36).toUpperCase()}`,
       name,
       condition: customRuleConditionSummary(conditions),
       conditions,
       decision,
       status: customDecisionRuleStatuses.some((item) => item.value === status) ? status : "pending",
       firstLevel: customRuleAssignmentLevels.includes(firstLevel) ? firstLevel : "Team Leader",
-      enabled: true,
+      enabled: editingRule ? editingRule.enabled !== false : true,
       updated: "剛剛"
-    });
+    };
+
+    if (editingRule) {
+      customDecisionRules = customDecisionRules.map((rule) => (rule.id === editingRule.id ? nextRule : rule));
+      editingCustomRuleId = "";
+    } else {
+      customDecisionRules.unshift(nextRule);
+    }
     saveCustomDecisionRules();
-    showToast("規則已新增。");
+    showToast(editingRule ? "規則已更新。" : "規則已新增。");
     render();
   }
 

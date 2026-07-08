@@ -1459,6 +1459,11 @@ tbody tr:last-child td {
   opacity: 0.62;
 }
 
+.custom-rule-card.editing {
+  border-color: rgba(36, 113, 94, 0.55);
+  box-shadow: 0 0 0 3px rgba(36, 113, 94, 0.1);
+}
+
 .custom-rule-head,
 .custom-rule-actions {
   display: flex;
@@ -1504,6 +1509,16 @@ tbody tr:last-child td {
   background: #fbfcfa;
 }
 
+.custom-rule-form-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.custom-rule-form-actions button {
+  width: 100%;
+}
+
 .condition-picker {
   display: grid;
   gap: 8px;
@@ -1523,10 +1538,10 @@ tbody tr:last-child td {
 
 .condition-row {
   display: grid;
-  grid-template-columns: minmax(118px, 0.9fr) minmax(96px, 0.72fr) minmax(130px, 1fr);
+  grid-template-columns: minmax(124px, 0.9fr) minmax(116px, 0.74fr) minmax(150px, 1fr);
   gap: 8px;
-  align-items: center;
-  padding: 8px;
+  align-items: end;
+  padding: 10px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: #ffffff;
@@ -1534,6 +1549,7 @@ tbody tr:last-child td {
 
 .condition-toggle {
   min-width: 0;
+  min-height: 38px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1548,17 +1564,23 @@ tbody tr:last-child td {
   accent-color: var(--brand);
 }
 
-.condition-operator.fixed {
-  display: flex;
-  min-height: 36px;
-  align-items: center;
-  padding: 0 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--soft);
+.condition-field {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.condition-field span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
+}
+
+.condition-field select,
+.condition-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
 }
 
 .ai-fold-panel {
@@ -2425,7 +2447,7 @@ tbody tr:last-child td {
 
   .custom-rule-actions {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
   }
 
   .custom-rule-actions button {
