@@ -81,10 +81,10 @@ const navItems = [
   },
   {
     id: "rg",
-    label: "責任博彩",
-    icon: "RG",
+    label: "玩家關懷",
+    icon: "關",
     sections: [
-      { id: "rg-metrics", label: "RG 指標" },
+      { id: "rg-metrics", label: "關懷指標" },
       { id: "rg-watchlist", label: "觀察名單" },
       { id: "rg-controls", label: "限制引導" },
       { id: "rg-cases", label: "Case 流程" }
@@ -135,7 +135,7 @@ const localeReplacements = {
     "Bonus": "優惠",
     "Tasks": "任務",
     "Risk Center": "風控中心",
-    "Responsible Gaming": "責任博彩",
+    "Responsible Gaming": "玩家關懷",
     "Reports": "報表",
     "Settings": "設定",
     "VIP Control Center": "VIP 控制中心",
@@ -151,11 +151,20 @@ const localeReplacements = {
     "Active VIP Today": "今日活躍 VIP",
     "VIP Deposit Today": "今日 VIP 入金",
     "VIP Withdrawal Today": "今日 VIP 出金",
-    "Open Tickets / RG": "未結工單 / RG",
+    "Open Tickets / RG": "未結工單 / 關懷",
     "Today Queue": "今日待辦",
     "Urgent VIP Tasks": "緊急 VIP 任務",
     "Guardrails": "操作防線",
-    "Risk / RG Alerts": "風控 / RG 警示",
+    "Risk / RG Alerts": "風控 / 關懷提醒",
+    "RG / Risk checks enabled": "已啟用關懷與風控檢查",
+    "RG Risk": "遊玩狀態警示",
+    "RG High": "需要關懷",
+    "RG Medium": "需留意",
+    "RG Low": "一般",
+    "RG Alerts": "關懷提醒",
+    "RG Watchlist": "關懷名單",
+    "RG Action": "關懷處理",
+    "RG Officer": "關懷專員",
     "Risk Team": "風控團隊",
     "Withdrawal Delay": "出金延遲",
     "Bonus Request": "優惠請求",
@@ -181,7 +190,7 @@ const localeReplacements = {
     "Add Note": "新增備註",
     "Issue Bonus": "發放優惠",
     "Escalate Risk": "升級風控",
-    "RG Action": "RG 動作",
+    "RG Action": "關懷處理",
     "Assigned Agent": "指派客服",
     "KYC / Currency": "KYC / 幣別",
     "Last Deposit": "最近入金",
@@ -224,11 +233,11 @@ const localeReplacements = {
     "Tag": "標籤",
     "CS Instruction": "客服指引",
     "Required Approval": "所需審批",
-    "RG Alerts": "RG 警示",
+    "RG Alerts": "關懷提醒",
     "Promo Blocked": "促銷封鎖",
     "Cooling-off Active": "冷靜期啟用",
     "Deposit Limit Requests": "存款限制申請",
-    "RG Watchlist": "RG 觀察名單",
+    "RG Watchlist": "關懷名單",
     "Allowed Actions": "允許操作",
     "Management Reports": "管理報表",
     "VIP Value Report": "VIP 價值報表",
@@ -278,7 +287,7 @@ const localeReplacements = {
     "處理層級": "Decision Level",
     "第一層處理": "First Handler",
     "VIP 等級": "VIP Level",
-    "RG 風險": "RG Risk",
+    "遊玩狀態": "Play Status",
     "問題類型": "Issue Type",
     "渠道": "Channel",
     "KYC 狀態": "KYC Status",
@@ -294,6 +303,10 @@ const localeReplacements = {
     "優惠請求": "Bonus Request",
     "投訴": "Complaint",
     "一般服務": "General",
+    "玩家關懷": "Player Care",
+    "關懷指標": "Care Metrics",
+    "需要關懷": "Needs care",
+    "需留意": "Needs attention",
     "請完整填寫規則條件": "Please complete rule conditions",
     "筆規則": "rules",
     "新增規則": "Add Rule",
@@ -626,7 +639,7 @@ const localeReplacements = {
     "處理層級": "Mức xử lý",
     "第一層處理": "Tầng xử lý đầu tiên",
     "VIP 等級": "Cấp VIP",
-    "RG 風險": "Rủi ro RG",
+    "遊玩狀態": "Trạng thái chơi",
     "問題類型": "Loại vấn đề",
     "渠道": "Kênh",
     "KYC 狀態": "Trạng thái KYC",
@@ -642,6 +655,10 @@ const localeReplacements = {
     "優惠請求": "Yêu cầu khuyến mãi",
     "投訴": "Khiếu nại",
     "一般服務": "Dịch vụ chung",
+    "玩家關懷": "Chăm sóc người chơi",
+    "關懷指標": "Chỉ số chăm sóc",
+    "需要關懷": "Cần chăm sóc",
+    "需留意": "Cần chú ý",
     "請完整填寫規則條件": "Vui lòng điền đủ điều kiện quy tắc",
     "筆規則": "quy tắc",
     "新增規則": "Thêm quy tắc",
@@ -1276,7 +1293,7 @@ const aiKnowledgeBase = [
   {
     id: "KB-RG-001",
     category: "Responsible Gaming",
-    title: "RG High 玩家回覆規範",
+    title: "需要關懷玩家回覆規範",
     owner: "Compliance",
     updated: "2026-06-20",
     summary: "禁止促銷式挽留，優先提供冷靜期、存款限制、投注限制與自我排除資訊。"
@@ -1295,7 +1312,7 @@ const aiKnowledgeBase = [
     title: "優惠補償審批與阻擋規則",
     owner: "VIP Manager",
     updated: "2026-06-16",
-    summary: "RG High、Bonus Abuse、Arbitrage、KYC 未完成時不可自動發放優惠。"
+    summary: "需要關懷、Bonus Abuse、Arbitrage、KYC 未完成時不可自動發放優惠。"
   },
   {
     id: "KB-COM-005",
@@ -1336,7 +1353,7 @@ const customRuleConditionTypes = [
   },
   {
     value: "rgRisk",
-    label: "RG 風險",
+    label: "遊玩狀態",
     input: "select",
     defaultOperator: "eq",
     options: ["High", "Medium", "Low"]
@@ -1421,7 +1438,7 @@ const titles = {
   bonus: ["成本控管", "優惠與補償"],
   tasks: ["留存流程", "跟進任務"],
   risk: ["風控協作", "風控中心"],
-  rg: ["合規控管", "責任博彩"],
+  rg: ["合規控管", "玩家關懷"],
   reports: ["管理視角", "報表"],
   settings: ["系統規則", "設定"]
 };
@@ -1467,6 +1484,24 @@ function customRuleOperatorForCondition(type, operator = "") {
   return allowedOperators.includes(operator) ? operator : allowedOperators[0];
 }
 
+function rgRiskLabel(value) {
+  return {
+    High: "需要關懷",
+    Medium: "需留意",
+    Low: "一般"
+  }[value] || value;
+}
+
+function customRuleOptionLabel(definition, option) {
+  if (definition.value === "rgRisk") return rgRiskLabel(option);
+  return option;
+}
+
+function customRuleConditionValueLabel(condition) {
+  if (condition.type === "rgRisk") return rgRiskLabel(condition.value);
+  return condition.value;
+}
+
 function normalizeCustomRuleConditions(rule) {
   const source = Array.isArray(rule.conditions)
     ? rule.conditions
@@ -1495,7 +1530,7 @@ function customRuleConditionSummary(ruleOrConditions) {
     .map((condition) => {
       const definition = customRuleConditionDefinition(condition.type);
       const operator = customRuleOperatorDefinition(condition.operator);
-      return `${definition.label} ${operator.label} ${condition.value}`;
+      return `${definition.label} ${operator.label} ${customRuleConditionValueLabel(condition)}`;
     })
     .join(" / ");
 }
@@ -1872,13 +1907,13 @@ function aiAnalyzeConversation(conversation) {
   }
 
   if (player.rgRisk === "High" || /一直輸|虧損|翻本|冷靜期|限制/i.test(text)) {
-    intent = "責任博彩關懷";
+    intent = "玩家關懷";
     category = "Responsible Gaming";
     confidence = Math.max(confidence, 96);
   }
 
   const blockers = [];
-  if (player.rgRisk === "High") blockers.push("RG High");
+  if (player.rgRisk === "High") blockers.push("遊玩狀態：需要關懷");
   if (player.kyc !== "通過") blockers.push("KYC 未完成");
   if (player.tags.includes("AML Watch")) blockers.push("AML Watch");
   if (player.tags.includes("Bonus Abuse") || player.tags.includes("Arbitrage")) blockers.push("Bonus Abuse / Arbitrage");
@@ -1889,7 +1924,7 @@ function aiAnalyzeConversation(conversation) {
     .filter((rule) => rule.status !== "open")
     .forEach((rule) => blockers.push(`自訂規則：${rule.name}`));
 
-  let severity = blockers.some((item) => /RG High|AML|P0|Bonus Abuse/i.test(item)) ? "high" : blockers.length ? "medium" : "low";
+  let severity = blockers.some((item) => /需要關懷|AML|P0|Bonus Abuse/i.test(item)) ? "high" : blockers.length ? "medium" : "low";
   if (matchedCustomRules.some((rule) => rule.status === "blocked")) severity = "high";
   if (severity === "low" && matchedCustomRules.some((rule) => rule.status === "pending")) severity = "medium";
 
@@ -1933,7 +1968,7 @@ function aiConversationSummary(conversation, player, category, matchedCustomRule
     latestPlayerMessage ? `最新玩家訊息：${latestPlayerMessage.body}` : "目前沒有玩家最新訊息。",
     `AI 判斷類型：${category}；風險標籤：${player.tags.join(" / ")}。`
   ];
-  if (player.rgRisk === "High") pieces.push("玩家為 RG High，不可使用促銷或刺激投注話術。");
+  if (player.rgRisk === "High") pieces.push("玩家目前需要關懷，不可使用促銷或刺激投注話術。");
   if (player.kyc !== "通過") pieces.push("KYC 未完成，只能說明可揭露的審核狀態。");
   matchedCustomRules.forEach((rule) => {
     const firstLevel = customRuleAssignmentLabel(rule, player);
@@ -1978,8 +2013,8 @@ function vipClass(level) {
 
 function riskClass(value) {
   const key = String(value).toLowerCase();
-  if (key.includes("high") || key.includes("p0") || key.includes("p1")) return "high";
-  if (key.includes("medium") || key.includes("review") || key.includes("p2")) return "medium";
+  if (key.includes("high") || key.includes("需要關懷") || key.includes("p0") || key.includes("p1")) return "high";
+  if (key.includes("medium") || key.includes("需留意") || key.includes("review") || key.includes("p2")) return "medium";
   return "low";
 }
 
@@ -2445,7 +2480,7 @@ function renderPlayers() {
 }
 
 function playerListCard(player) {
-  const risk = player.rgRisk === "High" ? "RG High" : player.riskLevel;
+  const risk = player.rgRisk === "High" ? rgRiskLabel(player.rgRisk) : player.riskLevel;
   return `
     <article class="player-card ${player.id === state.activePlayerId ? "active" : ""}">
       <div>
@@ -2479,7 +2514,7 @@ function renderProfile(player) {
               <div class="profile-actions">
                 <span class="pill ${vipClass(player.vipLevel)}">VIP ${player.vipLevel}</span>
                 <span class="severity ${riskClass(player.riskLevel)}">Risk ${player.riskLevel}</span>
-                <span class="severity ${riskClass(player.rgRisk)}">RG ${player.rgRisk}</span>
+                <span class="severity ${riskClass(player.rgRisk)}">遊玩狀態：${rgRiskLabel(player.rgRisk)}</span>
               </div>
             </div>
             <span class="status ${player.status.includes("限制") ? "blocked" : "open"}">${player.status}</span>
@@ -2490,7 +2525,7 @@ function renderProfile(player) {
             <button class="tool-button" data-action="add-note" data-player="${player.id}" type="button">Add Note</button>
             <button class="tool-button" data-issue-bonus="${player.id}" type="button">Issue Bonus</button>
             <button class="tool-button" data-action="risk-escalate" data-player="${player.id}" type="button">Escalate Risk</button>
-            <button class="tool-button" data-action="rg-action" data-player="${player.id}" type="button">RG Action</button>
+            <button class="tool-button" data-action="rg-action" data-player="${player.id}" type="button">關懷處理</button>
           </div>
         </div>
 
@@ -2871,7 +2906,7 @@ function templateButton(template) {
 }
 
 function blockedOfferReason(player) {
-  if (player.rgRisk === "High") return "RG High：禁止促銷訊息，補償需 Compliance 確認";
+  if (player.rgRisk === "High") return "需要關懷：禁止促銷訊息，補償需 Compliance 確認";
   if (player.tags.includes("Bonus Abuse")) return "Bonus Abuse：需主管與 Risk 審核";
   if (player.kyc !== "通過") return "KYC 未完成：限制出金與高額優惠";
   return "無硬性阻擋，仍需依額度規則檢查";
@@ -2892,7 +2927,7 @@ function renderCustomRuleConditionInput(definition) {
   const valueMarkup = definition.input === "select"
     ? `
       <select data-rule-condition-value="${definition.value}" aria-label="${definition.label} 條件值">
-        ${definition.options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}
+        ${definition.options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(customRuleOptionLabel(definition, option))}</option>`).join("")}
       </select>
     `
     : `
@@ -3037,7 +3072,7 @@ function renderAiDesk() {
 
       <div class="dashboard-grid" data-section="ai-triage">
         ${metricCard("待人工", needsReview, "需真人 / 審核 / 合規", needsReview ? "down" : "flat")}
-        ${metricCard("高風險", highRisk, "RG / AML / Abuse", highRisk ? "down" : "flat")}
+        ${metricCard("高風險", highRisk, "關懷 / AML / 濫用風險", highRisk ? "down" : "flat")}
         ${metricCard("可自動", autoAllowed, "低風險一般服務", "up")}
         ${metricCard("信心分數", `${avgConfidence}%`, "意圖分類平均值", "flat")}
       </div>
@@ -3067,7 +3102,7 @@ function renderAiDesk() {
               ${[
                 ["可自動", "一般 FAQ、流程說明、低風險狀態查詢。", "open"],
                 ["需審核", "優惠、補償、VIP 特例、Payment 進度。", "pending"],
-                ["需接管", "RG High、AML Watch、Bonus Abuse、出金承諾、風控細節。", "blocked"]
+                ["需接管", "需要關懷、AML Watch、Bonus Abuse、出金承諾、風控細節。", "blocked"]
               ]
                 .map(
                   ([title, body, status]) => `
@@ -3408,12 +3443,12 @@ function evaluateBonus(player, amount, type) {
   const add = (title, body, status, label) => checks.push({ title, body, status, label });
 
   if (player.rgRisk === "High") {
-    add("Responsible Gaming", "玩家為 RG High，促銷與刺激性挽留禁止；補償需 Compliance 先確認。", "blocked", "阻擋");
+    add("玩家關懷", "玩家目前需要關懷，促銷與刺激性挽留禁止；補償需 Compliance 先確認。", "blocked", "阻擋");
     blocked = type !== "Manual Credit";
     route = "Compliance 必審";
     approvals.push("Compliance");
   } else {
-    add("Responsible Gaming", "未達硬性阻擋，仍需避免刺激性話術。", "open", "通過");
+    add("玩家關懷", "未達硬性阻擋，仍需避免刺激性話術。", "open", "通過");
   }
 
   if (player.tags.includes("Bonus Abuse") || player.tags.includes("Arbitrage")) {
@@ -3509,7 +3544,7 @@ function renderTasks() {
           <div class="timeline">
             ${timelineItem("VIP 3+ 連續 7 天未登入", "建立 Churn Prevention，指派負責客服，SLA 24 小時。")}
             ${timelineItem("VIP 4+ 單日入金達門檻", "建立 Deposit Follow-up，客服需 30 分鐘內關懷。")}
-            ${timelineItem("連續 3 天大額虧損", "建立 Big Loss Care，並觸發 Responsible Gaming 觀察提醒。")}
+            ${timelineItem("連續 3 天大額虧損", "建立 Big Loss Care，並觸發玩家關懷觀察提醒。")}
             ${timelineItem("投訴超過 SLA 50%", "升級 Team Leader 並標記 Complaint Risk。")}
           </div>
         </section>
@@ -3603,14 +3638,14 @@ function renderResponsibleGaming() {
     <section class="section-stack">
       <div class="view-header">
         <div>
-          <p class="eyebrow">Responsible Gaming</p>
-          <h2>責任博彩控制中心</h2>
+          <p class="eyebrow">玩家關懷</p>
+          <h2>玩家關懷中心</h2>
         </div>
-        <button class="primary-button" data-action="rg-action" data-player="${state.activePlayerId}" type="button">套用 RG Action</button>
+        <button class="primary-button" data-action="rg-action" data-player="${state.activePlayerId}" type="button">套用關懷處理</button>
       </div>
 
       <div class="dashboard-grid" data-section="rg-metrics">
-        ${metricCard("RG Alerts", riskAlerts.filter((alert) => alert.type === "RG Risk").length, "High risk requires immediate escalation", "down")}
+        ${metricCard("關懷提醒", riskAlerts.filter((alert) => alert.type === "RG Risk").length, "需要關懷的玩家要優先處理", "down")}
         ${metricCard("Promo Blocked", 7, "促銷訊息自動停止", "flat")}
         ${metricCard("高風險 Case", highScoreCases, "Score 80+ 需 Compliance", "down")}
         ${metricCard("Deposit Limit Requests", 5, "2 件待 Compliance", "flat")}
@@ -3634,7 +3669,7 @@ function renderResponsibleGaming() {
                         <strong>${player.name}</strong>
                         <p>${player.id} · ${player.username}</p>
                       </div>
-                      <span class="severity ${riskClass(player.rgRisk)}">RG ${player.rgRisk}</span>
+                      <span class="severity ${riskClass(player.rgRisk)}">遊玩狀態：${rgRiskLabel(player.rgRisk)}</span>
                     </div>
                     <p>${rgSignals(player).join(" / ")}</p>
                     <div class="mini-signal-grid">
@@ -3661,8 +3696,8 @@ function renderResponsibleGaming() {
           </div>
           <div class="check-list">
             ${[
-              ["Bonus", "RG Risk 玩家禁止或需審批，不能作為挽留刺激。", "blocked"],
-              ["Promotional Message", "RG High 玩家禁止發送促銷訊息。", "blocked"],
+              ["Bonus", "需要關懷的玩家禁止或需審批，不能作為挽留刺激。", "blocked"],
+              ["Promotional Message", "需要關懷的玩家禁止發送促銷訊息。", "blocked"],
               ["Limit Increase", "提高限額需 Compliance 審核。", "pending"],
               ["Cooling-off", "客服可引導玩家申請冷靜期。", "open"],
               ["Self-exclusion", "需走合規流程並保留稽核紀錄。", "pending"]
@@ -3793,7 +3828,7 @@ function renderReports() {
       title: "投訴",
       question: "投訴是否正在變成風險？",
       primary: `${tickets.filter((ticket) => /Complaint|Withdrawal|Responsible/i.test(ticket.category)).length} 件`,
-      secondary: "投訴 / 出金 / RG 相關",
+      secondary: "投訴 / 出金 / 關懷相關",
       warning: "同玩家多工單或 SLA breach 會放大客訴與監管風險。",
       action: "把對話、工單、內部備註串回玩家資料。",
       bars: [30, 28, 34, 26, 21, 18]
@@ -3802,8 +3837,8 @@ function renderReports() {
       title: "風險",
       question: "哪些玩家不應該被一般行銷處理？",
       primary: `${highRiskVip} 位`,
-      secondary: "High Risk / RG High",
-      warning: "RG High、AML Watch、Bonus Abuse 不應進一般留存或促銷流程。",
+      secondary: "高風險 / 需要關懷",
+      warning: "需要關懷、AML Watch、Bonus Abuse 不應進一般留存或促銷流程。",
       action: "轉 Risk / Compliance，客服只看可揭露指引。",
       bars: [20, 26, 24, 31, 28, 22]
     }
@@ -3822,7 +3857,7 @@ function renderReports() {
         ${metricCard("本月 NGR", formatMoney(totalNgr), "扣除玩家輸贏與成本後的管理視角", "up")}
         ${metricCard("優惠成本率", `${bonusCostRatio}%`, "超過 60% 需 Manager 理由", bonusCostRatio >= 60 ? "down" : "flat")}
         ${metricCard("SLA 風險", slaRisk, "due / breached 工單", slaRisk ? "down" : "flat")}
-        ${metricCard("高風險 VIP", highRiskVip, "Risk High 或 RG High", highRiskVip ? "down" : "flat")}
+        ${metricCard("高風險 VIP", highRiskVip, "Risk High 或需要關懷", highRiskVip ? "down" : "flat")}
       </div>
 
       <div class="two-column" data-section="reports-executive">
@@ -3849,7 +3884,7 @@ function renderReports() {
           </div>
           <div class="report-action-list">
             ${reportAction("1", "處理 breached / due 工單", "避免大額出金、RG、投訴案件失去 SLA 控制。")}
-            ${reportAction("2", "檢查高風險 VIP", "RG High、AML Watch、Bonus Abuse 先從行銷與優惠流程排除。")}
+            ${reportAction("2", "檢查高風險 VIP", "需要關懷、AML Watch、Bonus Abuse 先從行銷與優惠流程排除。")}
             ${reportAction("3", "審查高成本優惠", "金額超過建議上限或成本率過高時，要求主管理由。")}
             ${reportAction("4", "回訪流失風險玩家", "只做關係維護，不用刺激投注話術。")}
           </div>
@@ -3973,7 +4008,7 @@ function renderSettings() {
           <div class="settings-list">
             ${settingRow("VIP 5 First Response", "1 分鐘內，解決目標 15 分鐘。", true)}
             ${settingRow("Large Withdrawal", "大額出金問題 30 分鐘內處理。", true)}
-            ${settingRow("RG High Risk", "即時升級 Compliance。", true)}
+            ${settingRow("需要關懷玩家", "即時升級 Compliance。", true)}
           </div>
         </section>
 
@@ -4233,12 +4268,12 @@ function openTaskModal(playerId) {
 function openRgModal(playerId) {
   const player = playerById(playerId);
   showModal({
-    eyebrow: "Responsible Gaming",
-    title: `RG Action · ${player.name}`,
+    eyebrow: "玩家關懷",
+    title: `關懷處理 · ${player.name}`,
     body: `
       <form class="modal-form" id="rgForm" data-player="${player.id}">
         <div class="detail-grid">
-          ${summaryCell("RG Risk", player.rgRisk)}
+          ${summaryCell("遊玩狀態", rgRiskLabel(player.rgRisk))}
           ${summaryCell("Today P/L", formatMoney(player.metrics.todayPl))}
           ${summaryCell("Deposit Pattern", player.behavior.depositPattern)}
           ${summaryCell("Signals", rgSignals(player).join(" / "))}
@@ -4263,7 +4298,7 @@ function openRgModal(playerId) {
         </div>
         <div class="form-grid">
           <label class="field">
-            <span>Risk Score</span>
+            <span>關懷分數</span>
             <input id="rgRiskScore" type="number" min="0" max="100" value="${player.rgRisk === "High" ? 88 : player.rgRisk === "Medium" ? 64 : 35}" />
           </label>
           <label class="field">
@@ -4826,7 +4861,7 @@ document.addEventListener("submit", (event) => {
       });
     }
     closeModal();
-    showToast("RG Action 已送出 Compliance 審核。");
+    showToast("關懷處理已送出 Compliance 審核。");
     render();
   }
 });
