@@ -37,6 +37,7 @@ const navItems = [
     sections: [
       { id: "ai-triage", label: "AI 分流" },
       { id: "ai-rules", label: "決策規則" },
+      { id: "ai-rule-config", label: "規則設定" },
       { id: "ai-audit", label: "知識與稽核" }
     ]
   },
@@ -155,6 +156,11 @@ const localeReplacements = {
     "Urgent VIP Tasks": "緊急 VIP 任務",
     "Guardrails": "操作防線",
     "Risk / RG Alerts": "風控 / RG 警示",
+    "Risk Team": "風控團隊",
+    "Withdrawal Delay": "出金延遲",
+    "Bonus Request": "優惠請求",
+    "Complaint": "投訴",
+    "General": "一般服務",
     "Assigned Portfolio": "負責玩家組合",
     "My VIP Players": "我的 VIP 玩家",
     "Open Conversations": "開啟對話",
@@ -236,6 +242,8 @@ const localeReplacements = {
     "SLA Rules": "SLA 規則",
     "Template Control": "話術控管",
     "Custom Rules": "自訂規則",
+    "Rule Builder": "規則建立",
+    "Active Rules": "已啟用規則",
     "Rule Name": "規則名稱",
     "Condition": "判斷條件",
     "Decision": "處理方式",
@@ -259,11 +267,35 @@ const localeReplacements = {
     "玩家關係管理": "Player Relationship Management",
     "Player ID、帳號、標籤、工單": "Player ID, username, tags, tickets",
     "Player ID、帳號、標籤": "Player ID, username, tags",
+    "規則設定": "Rule Settings",
+    "規則建立": "Rule Builder",
     "自訂規則": "Custom Rules",
+    "新增自訂規則": "Add Custom Rule",
+    "已建立規則": "Created Rules",
     "規則名稱": "Rule Name",
     "判斷條件": "Condition",
     "處理方式": "Decision",
     "處理層級": "Decision Level",
+    "第一層處理": "First Handler",
+    "VIP 等級": "VIP Level",
+    "RG 風險": "RG Risk",
+    "問題類型": "Issue Type",
+    "渠道": "Channel",
+    "KYC 狀態": "KYC Status",
+    "玩家標籤": "Player Tag",
+    "訊息關鍵字": "Message Keyword",
+    "大於等於": "Greater than or equal",
+    "等於": "Equals",
+    "小於等於": "Less than or equal",
+    "包含": "Contains",
+    "負責客服": "Assigned Agent",
+    "風控團隊": "Risk Team",
+    "出金延遲": "Withdrawal Delay",
+    "優惠請求": "Bonus Request",
+    "投訴": "Complaint",
+    "一般服務": "General",
+    "請完整填寫規則條件": "Please complete rule conditions",
+    "筆規則": "rules",
     "新增規則": "Add Rule",
     "啟用": "Enabled",
     "停用": "Disabled",
@@ -476,6 +508,11 @@ const localeReplacements = {
     "Urgent VIP Tasks": "Nhiệm vụ VIP khẩn cấp",
     "Guardrails": "Rào chắn vận hành",
     "Risk / RG Alerts": "Cảnh báo Risk / RG",
+    "Risk Team": "Đội Risk",
+    "Withdrawal Delay": "Chậm rút tiền",
+    "Bonus Request": "Yêu cầu khuyến mãi",
+    "Complaint": "Khiếu nại",
+    "General": "Dịch vụ chung",
     "Assigned Portfolio": "Danh mục phụ trách",
     "My VIP Players": "VIP của tôi",
     "Open Conversations": "Cuộc trò chuyện mở",
@@ -557,6 +594,8 @@ const localeReplacements = {
     "SLA Rules": "Quy tắc SLA",
     "Template Control": "Kiểm soát mẫu câu",
     "Custom Rules": "Quy tắc tùy chỉnh",
+    "Rule Builder": "Tạo quy tắc",
+    "Active Rules": "Quy tắc đang bật",
     "Rule Name": "Tên quy tắc",
     "Condition": "Điều kiện",
     "Decision": "Cách xử lý",
@@ -576,11 +615,35 @@ const localeReplacements = {
     "玩家關係管理": "Quản lý quan hệ người chơi",
     "Player ID、帳號、標籤、工單": "Player ID, tài khoản, nhãn, ticket",
     "Player ID、帳號、標籤": "Player ID, tài khoản, nhãn",
+    "規則設定": "Cài đặt quy tắc",
+    "規則建立": "Tạo quy tắc",
     "自訂規則": "Quy tắc tùy chỉnh",
+    "新增自訂規則": "Thêm quy tắc tùy chỉnh",
+    "已建立規則": "Quy tắc đã tạo",
     "規則名稱": "Tên quy tắc",
     "判斷條件": "Điều kiện",
     "處理方式": "Cách xử lý",
     "處理層級": "Mức xử lý",
+    "第一層處理": "Tầng xử lý đầu tiên",
+    "VIP 等級": "Cấp VIP",
+    "RG 風險": "Rủi ro RG",
+    "問題類型": "Loại vấn đề",
+    "渠道": "Kênh",
+    "KYC 狀態": "Trạng thái KYC",
+    "玩家標籤": "Nhãn người chơi",
+    "訊息關鍵字": "Từ khóa tin nhắn",
+    "大於等於": "Lớn hơn hoặc bằng",
+    "等於": "Bằng",
+    "小於等於": "Nhỏ hơn hoặc bằng",
+    "包含": "Chứa",
+    "負責客服": "CS phụ trách",
+    "風控團隊": "Đội Risk",
+    "出金延遲": "Chậm rút tiền",
+    "優惠請求": "Yêu cầu khuyến mãi",
+    "投訴": "Khiếu nại",
+    "一般服務": "Dịch vụ chung",
+    "請完整填寫規則條件": "Vui lòng điền đủ điều kiện quy tắc",
+    "筆規則": "quy tắc",
     "新增規則": "Thêm quy tắc",
     "啟用": "Bật",
     "停用": "Tắt",
@@ -1255,6 +1318,86 @@ const customDecisionRuleStatuses = [
   { value: "blocked", label: "需接管" }
 ];
 
+const customRuleOperators = [
+  { value: "gte", label: "大於等於" },
+  { value: "eq", label: "等於" },
+  { value: "lte", label: "小於等於" },
+  { value: "contains", label: "包含" }
+];
+
+const customRuleConditionTypes = [
+  {
+    value: "vipLevel",
+    label: "VIP 等級",
+    input: "number",
+    placeholder: "4",
+    defaultOperator: "gte",
+    operators: ["gte", "eq", "lte"]
+  },
+  {
+    value: "rgRisk",
+    label: "RG 風險",
+    input: "select",
+    defaultOperator: "eq",
+    options: ["High", "Medium", "Low"]
+  },
+  {
+    value: "priority",
+    label: "優先級",
+    input: "select",
+    defaultOperator: "eq",
+    options: ["P0", "P1", "P2"]
+  },
+  {
+    value: "category",
+    label: "問題類型",
+    input: "select",
+    defaultOperator: "eq",
+    options: ["Responsible Gaming", "Withdrawal Delay", "Bonus Request", "Complaint", "General"]
+  },
+  {
+    value: "channel",
+    label: "渠道",
+    input: "select",
+    defaultOperator: "eq",
+    options: ["LINE", "WhatsApp", "Live Chat"]
+  },
+  {
+    value: "kyc",
+    label: "KYC 狀態",
+    input: "select",
+    defaultOperator: "eq",
+    options: ["通過", "補件中"]
+  },
+  {
+    value: "tag",
+    label: "玩家標籤",
+    input: "text",
+    placeholder: "High Value",
+    defaultOperator: "contains",
+    operators: ["contains"]
+  },
+  {
+    value: "keyword",
+    label: "訊息關鍵字",
+    input: "text",
+    placeholder: "出金 / 投訴 / 冷靜期",
+    defaultOperator: "contains",
+    operators: ["contains"]
+  }
+];
+
+const customRuleAssignmentLevels = [
+  "負責客服",
+  "VIP CS",
+  "Team Leader",
+  "VIP Manager",
+  "Risk Team",
+  "Payment Desk",
+  "RG Officer",
+  "Compliance"
+];
+
 let customDecisionRules = loadCustomDecisionRules();
 
 const state = {
@@ -1310,6 +1453,53 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function customRuleConditionDefinition(type) {
+  return customRuleConditionTypes.find((item) => item.value === type) || customRuleConditionTypes[0];
+}
+
+function customRuleOperatorDefinition(operator) {
+  return customRuleOperators.find((item) => item.value === operator) || customRuleOperators[0];
+}
+
+function customRuleOperatorForCondition(type, operator = "") {
+  const definition = customRuleConditionDefinition(type);
+  const allowedOperators = definition.operators || [definition.defaultOperator || "eq"];
+  return allowedOperators.includes(operator) ? operator : allowedOperators[0];
+}
+
+function normalizeCustomRuleConditions(rule) {
+  const source = Array.isArray(rule.conditions)
+    ? rule.conditions
+    : rule.condition
+      ? [{ type: "keyword", operator: "contains", value: rule.condition }]
+      : [];
+
+  return source
+    .filter((condition) => condition && typeof condition === "object")
+    .map((condition) => {
+      const definition = customRuleConditionDefinition(condition.type);
+      return {
+        type: definition.value,
+        operator: customRuleOperatorForCondition(definition.value, condition.operator),
+        value: String(condition.value ?? "").trim()
+      };
+    })
+    .filter((condition) => condition.value);
+}
+
+function customRuleConditionSummary(ruleOrConditions) {
+  const conditions = Array.isArray(ruleOrConditions)
+    ? ruleOrConditions
+    : normalizeCustomRuleConditions(ruleOrConditions || {});
+  return conditions
+    .map((condition) => {
+      const definition = customRuleConditionDefinition(condition.type);
+      const operator = customRuleOperatorDefinition(condition.operator);
+      return `${definition.label} ${operator.label} ${condition.value}`;
+    })
+    .join(" / ");
+}
+
 function loadCustomDecisionRules() {
   try {
     const raw = localStorage.getItem("vip-cs-custom-decision-rules");
@@ -1318,16 +1508,21 @@ function loadCustomDecisionRules() {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .filter((rule) => rule && typeof rule === "object")
-      .map((rule) => ({
-        id: String(rule.id || `CR-${Date.now()}`),
-        name: String(rule.name || "").trim(),
-        condition: String(rule.condition || "").trim(),
-        decision: String(rule.decision || "").trim(),
-        status: customDecisionRuleStatuses.some((item) => item.value === rule.status) ? rule.status : "pending",
-        enabled: rule.enabled !== false,
-        updated: String(rule.updated || "剛剛")
-      }))
-      .filter((rule) => rule.name && rule.condition && rule.decision);
+      .map((rule) => {
+        const conditions = normalizeCustomRuleConditions(rule);
+        return {
+          id: String(rule.id || `CR-${Date.now()}`),
+          name: String(rule.name || "").trim(),
+          condition: customRuleConditionSummary(conditions),
+          conditions,
+          decision: String(rule.decision || "").trim(),
+          status: customDecisionRuleStatuses.some((item) => item.value === rule.status) ? rule.status : "pending",
+          firstLevel: customRuleAssignmentLevels.includes(rule.firstLevel) ? rule.firstLevel : "Team Leader",
+          enabled: rule.enabled !== false,
+          updated: String(rule.updated || "剛剛")
+        };
+      })
+      .filter((rule) => rule.name && rule.conditions.length && rule.decision);
   } catch (error) {
     return [];
   }
@@ -1594,15 +1789,6 @@ function customDecisionRuleById(id) {
   return customDecisionRules.find((rule) => rule.id === id);
 }
 
-function customRuleSearchTokens(rule) {
-  const stopWords = new Set(["and", "or", "the", "with", "以及", "或", "且", "與", "和", "需", "需要"]);
-  return `${rule.name} ${rule.condition}`
-    .toLowerCase()
-    .split(/[\s,，、/＋+;；:：|()（）\[\]{}<>]+/)
-    .map((token) => token.trim())
-    .filter((token) => token.length >= 2 && !stopWords.has(token));
-}
-
 function customRuleContext(conversation, player, category, text) {
   return [
     text,
@@ -1621,13 +1807,47 @@ function customRuleContext(conversation, player, category, text) {
     .toLowerCase();
 }
 
+function compareCustomRuleNumber(actual, operator, expected) {
+  if (Number.isNaN(actual) || Number.isNaN(expected)) return false;
+  if (operator === "gte") return actual >= expected;
+  if (operator === "lte") return actual <= expected;
+  return actual === expected;
+}
+
+function customRuleTextIncludes(actual, expected) {
+  return String(actual || "").toLowerCase().includes(String(expected || "").toLowerCase());
+}
+
+function customRuleConditionMatches(condition, conversation, player, category, text) {
+  const value = String(condition.value || "").trim();
+  if (!value) return false;
+
+  if (condition.type === "vipLevel") {
+    return compareCustomRuleNumber(Number(player.vipLevel), condition.operator, Number(value));
+  }
+
+  if (condition.type === "rgRisk") return customRuleTextIncludes(player.rgRisk, value);
+  if (condition.type === "priority") return customRuleTextIncludes(conversation.priority, value);
+  if (condition.type === "category") return customRuleTextIncludes(category, value);
+  if (condition.type === "channel") return customRuleTextIncludes(conversation.channel, value);
+  if (condition.type === "kyc") return customRuleTextIncludes(player.kyc, value);
+  if (condition.type === "tag") return player.tags.some((tag) => customRuleTextIncludes(tag, value));
+  if (condition.type === "keyword") return customRuleTextIncludes(customRuleContext(conversation, player, category, text), value);
+
+  return false;
+}
+
 function customDecisionRuleMatches(rule, conversation, player, category, text) {
   if (!rule.enabled) return false;
-  const tokens = customRuleSearchTokens(rule);
-  if (!tokens.length) return false;
-  const context = customRuleContext(conversation, player, category, text);
-  const matched = tokens.filter((token) => context.includes(token)).length;
-  return matched >= Math.min(2, tokens.length);
+  const conditions = normalizeCustomRuleConditions(rule);
+  if (!conditions.length) return false;
+  return conditions.every((condition) => customRuleConditionMatches(condition, conversation, player, category, text));
+}
+
+function customRuleAssignmentLabel(rule, player) {
+  if (!rule?.firstLevel) return "";
+  if (rule.firstLevel === "負責客服") return player?.agent || "負責客服";
+  return rule.firstLevel;
 }
 
 function aiAnalyzeConversation(conversation) {
@@ -1677,7 +1897,8 @@ function aiAnalyzeConversation(conversation) {
     severity === "low" &&
     !["Responsible Gaming", "Withdrawal Delay", "Bonus Request", "Complaint"].includes(category) &&
     !matchedCustomRules.some((rule) => rule.status !== "open");
-  const route = category === "Responsible Gaming"
+  const firstCustomRoute = customRuleAssignmentLabel(matchedCustomRules.find((rule) => rule.status !== "open" && rule.firstLevel), player);
+  const defaultRoute = category === "Responsible Gaming"
     ? "Compliance / RG Officer"
     : category === "Withdrawal Delay"
       ? "Payment Desk"
@@ -1686,6 +1907,7 @@ function aiAnalyzeConversation(conversation) {
         : category === "Complaint"
           ? "Team Leader"
           : player.agent;
+  const route = firstCustomRoute || defaultRoute;
 
   return {
     conversation,
@@ -1714,7 +1936,8 @@ function aiConversationSummary(conversation, player, category, matchedCustomRule
   if (player.rgRisk === "High") pieces.push("玩家為 RG High，不可使用促銷或刺激投注話術。");
   if (player.kyc !== "通過") pieces.push("KYC 未完成，只能說明可揭露的審核狀態。");
   matchedCustomRules.forEach((rule) => {
-    pieces.push(`命中自訂規則「${rule.name}」：${customRuleStatusLabel(rule.status)}，${rule.decision}`);
+    const firstLevel = customRuleAssignmentLabel(rule, player);
+    pieces.push(`命中自訂規則「${rule.name}」：${customRuleStatusLabel(rule.status)}${firstLevel ? `，第一層處理：${firstLevel}` : ""}，${rule.decision}`);
   });
   return pieces;
 }
@@ -2654,6 +2877,61 @@ function blockedOfferReason(player) {
   return "無硬性阻擋，仍需依額度規則檢查";
 }
 
+function renderCustomRuleConditionInput(definition) {
+  const operators = definition.operators || [definition.defaultOperator || "eq"];
+  const operatorMarkup = operators.length > 1
+    ? `
+      <select class="condition-operator" data-rule-condition-operator="${definition.value}" aria-label="${definition.label} 比較方式">
+        ${operators
+          .map((operator) => `<option value="${operator}" ${operator === definition.defaultOperator ? "selected" : ""}>${customRuleOperatorDefinition(operator).label}</option>`)
+          .join("")}
+      </select>
+    `
+    : `<span class="condition-operator fixed">${customRuleOperatorDefinition(operators[0]).label}</span>`;
+
+  const valueMarkup = definition.input === "select"
+    ? `
+      <select data-rule-condition-value="${definition.value}" aria-label="${definition.label} 條件值">
+        ${definition.options.map((option) => `<option value="${escapeHtml(option)}">${escapeHtml(option)}</option>`).join("")}
+      </select>
+    `
+    : `
+      <input
+        data-rule-condition-value="${definition.value}"
+        type="${definition.input === "number" ? "number" : "text"}"
+        ${definition.input === "number" ? 'inputmode="numeric" min="0" max="9" step="1"' : ""}
+        placeholder="${escapeHtml(definition.placeholder || "")}"
+        value="${definition.value === "vipLevel" ? "4" : ""}"
+      />
+    `;
+
+  return `
+    <div class="condition-row">
+      <label class="condition-toggle">
+        <input data-rule-condition-check="${definition.value}" type="checkbox" ${definition.value === "vipLevel" ? "checked" : ""} />
+        <span>${definition.label}</span>
+      </label>
+      ${operatorMarkup}
+      ${valueMarkup}
+    </div>
+  `;
+}
+
+function customRuleConditionsFromForm(form) {
+  return customRuleConditionTypes
+    .filter((definition) => form.querySelector(`[data-rule-condition-check="${definition.value}"]`)?.checked)
+    .map((definition) => {
+      const valueElement = form.querySelector(`[data-rule-condition-value="${definition.value}"]`);
+      const operatorElement = form.querySelector(`[data-rule-condition-operator="${definition.value}"]`);
+      return {
+        type: definition.value,
+        operator: customRuleOperatorForCondition(definition.value, operatorElement?.value || definition.defaultOperator),
+        value: String(valueElement?.value || "").trim()
+      };
+    })
+    .filter((condition) => condition.value);
+}
+
 function renderCustomDecisionRules() {
   const rulesMarkup = customDecisionRules.length
     ? customDecisionRules
@@ -2667,8 +2945,9 @@ function renderCustomDecisionRules() {
               </div>
               <span class="status ${rule.status}">${customRuleStatusLabel(rule.status)}</span>
             </div>
-            <p><b>Condition</b>${escapeHtml(rule.condition)}</p>
-            <p><b>Decision</b>${escapeHtml(rule.decision)}</p>
+            <p><b>判斷條件</b>${escapeHtml(customRuleConditionSummary(rule))}</p>
+            <p><b>第一層處理</b>${escapeHtml(rule.firstLevel || "Team Leader")}</p>
+            <p><b>處理方式</b>${escapeHtml(rule.decision)}</p>
             <div class="custom-rule-actions">
               <button class="subtle-button" data-custom-rule-toggle="${escapeHtml(rule.id)}" type="button">${rule.enabled ? "停用" : "啟用"}</button>
               <button class="ghost-button" data-custom-rule-delete="${escapeHtml(rule.id)}" type="button">刪除</button>
@@ -2680,23 +2959,27 @@ function renderCustomDecisionRules() {
     : `<div class="empty-state compact">No custom rules yet</div>`;
 
   return `
-    <div class="custom-rule-section">
-      <div class="subsection-title">
+    <div class="panel-header">
+      <div>
         <p class="eyebrow">Custom Rules</p>
-        <strong>自訂規則</strong>
+        <h3>規則設定</h3>
       </div>
-      <div class="custom-rule-list">
-        ${rulesMarkup}
-      </div>
+      <span class="status open">${customDecisionRules.length} 筆規則</span>
+    </div>
+    <div class="custom-rule-manager">
       <form class="custom-rule-form" id="customRuleForm">
+        <div class="subsection-title">
+          <p class="eyebrow">Rule Builder</p>
+          <strong>新增自訂規則</strong>
+        </div>
         <label class="field">
           <span>Rule Name</span>
           <input id="customRuleName" maxlength="40" required placeholder="高價值投訴需主管審核" />
         </label>
-        <label class="field">
-          <span>Condition</span>
-          <input id="customRuleCondition" maxlength="80" required placeholder="VIP 4+ 且 投訴 / 出金延遲" />
-        </label>
+        <fieldset class="condition-picker">
+          <legend>判斷條件</legend>
+          ${customRuleConditionTypes.map((definition) => renderCustomRuleConditionInput(definition)).join("")}
+        </fieldset>
         <label class="field">
           <span>Decision Level</span>
           <select id="customRuleStatus">
@@ -2706,11 +2989,28 @@ function renderCustomDecisionRules() {
           </select>
         </label>
         <label class="field">
+          <span>第一層處理</span>
+          <select id="customRuleFirstLevel">
+            ${customRuleAssignmentLevels
+              .map((level) => `<option value="${escapeHtml(level)}">${escapeHtml(level)}</option>`)
+              .join("")}
+          </select>
+        </label>
+        <label class="field">
           <span>Decision</span>
           <textarea id="customRuleDecision" maxlength="140" required placeholder="建立 P1 工單，指派 Team Leader 審核後回覆"></textarea>
         </label>
         <button class="primary-button" type="submit">Add Rule</button>
       </form>
+      <div class="custom-rule-list-panel">
+        <div class="subsection-title">
+          <p class="eyebrow">Active Rules</p>
+          <strong>已建立規則</strong>
+        </div>
+        <div class="custom-rule-list">
+          ${rulesMarkup}
+        </div>
+      </div>
     </div>
   `;
 }
@@ -2779,7 +3079,6 @@ function renderAiDesk() {
                 )
                 .join("")}
             </div>
-            ${renderCustomDecisionRules()}
           </section>
 
           <details class="panel ai-fold-panel" data-section="ai-audit">
@@ -2810,6 +3109,10 @@ function renderAiDesk() {
             </div>
           </details>
         </aside>
+
+        <section class="panel custom-rule-panel" data-section="ai-rule-config">
+          ${renderCustomDecisionRules()}
+        </section>
       </div>
     </section>
   `;
@@ -4373,18 +4676,26 @@ document.addEventListener("submit", (event) => {
 
   if (event.target.id === "customRuleForm") {
     event.preventDefault();
-    const name = document.querySelector("#customRuleName").value.trim();
-    const condition = document.querySelector("#customRuleCondition").value.trim();
-    const decision = document.querySelector("#customRuleDecision").value.trim();
-    const status = document.querySelector("#customRuleStatus").value;
-    if (!name || !condition || !decision) return;
+    const form = event.target;
+    const name = form.querySelector("#customRuleName").value.trim();
+    const conditions = customRuleConditionsFromForm(form);
+    const decision = form.querySelector("#customRuleDecision").value.trim();
+    const status = form.querySelector("#customRuleStatus").value;
+    const firstLevel = form.querySelector("#customRuleFirstLevel").value;
+    const hasInvalidNumber = conditions.some((condition) => condition.type === "vipLevel" && Number.isNaN(Number(condition.value)));
+    if (!name || !conditions.length || !decision || hasInvalidNumber) {
+      showToast("請完整填寫規則條件。");
+      return;
+    }
 
     customDecisionRules.unshift({
       id: `CR-${Date.now().toString(36).toUpperCase()}`,
       name,
-      condition,
+      condition: customRuleConditionSummary(conditions),
+      conditions,
       decision,
       status: customDecisionRuleStatuses.some((item) => item.value === status) ? status : "pending",
+      firstLevel: customRuleAssignmentLevels.includes(firstLevel) ? firstLevel : "Team Leader",
       enabled: true,
       updated: "剛剛"
     });
